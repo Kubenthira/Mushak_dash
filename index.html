@@ -13,15 +13,48 @@
     
     <link rel="stylesheet" href="/src/style.css" />
     <script>
+      // Prevent browser extensions and third-party scripts from throwing "Cannot read properties of null (reading 'drawImage')"
+      // when attempting to request a 2D context from Phaser's active WebGL canvas
+      (function() {
+        try {
+          var origGetContext = HTMLCanvasElement.prototype.getContext;
+          var dummyCtx = new Proxy({
+            drawImage: function() {},
+            getImageData: function() { return { data: new Uint8ClampedArray(4) }; },
+            clearRect: function() {},
+            save: function() {},
+            restore: function() {},
+            beginPath: function() {},
+            moveTo: function() {},
+            lineTo: function() {},
+            stroke: function() {},
+            fill: function() {},
+            arc: function() {},
+            rect: function() {},
+            fillRect: function() {}
+          }, {
+            get: function(target, prop) {
+              if (prop in target) return target[prop];
+              return function() {};
+            }
+          });
+          HTMLCanvasElement.prototype.getContext = function(type) {
+            var ctx = origGetContext.apply(this, arguments);
+            if (!ctx && type === '2d') {
+              return dummyCtx;
+            }
+            return ctx;
+          };
+        } catch (e) {}
+      })();
+
       window.onerror = function(msg, url, line, col, err) {
         if (!url || url.includes('chrome-extension') || url.includes('moz-extension')) return;
         console.error('[Global Error]', msg, url, line, err);
       };
       window.addEventListener('unhandledrejection', function(e) {
         var reason = e.reason && e.reason.message ? e.reason.message : String(e.reason || '');
-        // Ignore known third-party browser extension / canvas context inspection errors
         if (reason.includes('drawImage') || reason.includes('Extension') || reason.includes('ResizeObserver')) {
-          console.warn('[Ignored external rejection]:', reason);
           return;
         }
         console.error('[Unhandled Promise Rejection]:', e.reason);
