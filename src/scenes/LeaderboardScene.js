@@ -21,25 +21,18 @@ export default class LeaderboardScene extends Phaser.Scene {
 
     this.width = this.scale.width;
     this.height = this.scale.height;
+    this.isMobile = this.width < 680 || this.width < this.height;
 
     const texH = 724;
     this.scaleFactor = this.height / texH;
 
     // 1. Background Layers
     this.bgLayer1 = this.add.tileSprite(0, 0, this.width / this.scaleFactor, this.height / this.scaleFactor, 'bg_layer1')
-      .setOrigin(0, 0)
-      .setScale(this.scaleFactor)
-      .setDepth(0);
-
+      .setOrigin(0, 0).setScale(this.scaleFactor).setDepth(0);
     this.bgLayer2 = this.add.tileSprite(0, 0, this.width / this.scaleFactor, this.height / this.scaleFactor, 'bg_layer2')
-      .setOrigin(0, 0)
-      .setScale(this.scaleFactor)
-      .setDepth(1);
-
+      .setOrigin(0, 0).setScale(this.scaleFactor).setDepth(1);
     this.bgLayer3 = this.add.tileSprite(0, 0, this.width / this.scaleFactor, this.height / this.scaleFactor, 'bg_layer3')
-      .setOrigin(0, 0)
-      .setScale(this.scaleFactor)
-      .setDepth(2);
+      .setOrigin(0, 0).setScale(this.scaleFactor).setDepth(2);
 
     // Dark Festive Tint Overlay
     this.overlay = this.add.graphics();
@@ -63,16 +56,15 @@ export default class LeaderboardScene extends Phaser.Scene {
     this.createHeader();
 
     // 3. Score List Container
-    this.scoreContainer = this.add.container(0, 0);
-    this.scoreContainer.setDepth(10);
+    this.scoreContainer = this.add.container(0, 0).setDepth(10);
 
     // 4. Status / Loading Indicator
     this.statusText = this.add.text(this.width / 2, this.height * 0.48, this.statusMessage, {
       fontFamily: 'Fredoka, Outfit, sans-serif',
-      fontSize: '20px',
+      fontSize: this.isMobile ? '16px' : '20px',
       color: '#FFD700',
       align: 'center',
-      wordWrap: { width: Math.min(this.width * 0.85, 700) }
+      wordWrap: { width: Math.min(this.width * 0.88, 640) }
     }).setOrigin(0.5).setDepth(15);
 
     // 5. Navigation Buttons
@@ -85,26 +77,28 @@ export default class LeaderboardScene extends Phaser.Scene {
   }
 
   createHeader() {
-    const headerContainer = this.add.container(this.width / 2, 45).setDepth(10);
+    const headerY = this.isMobile ? 32 : 45;
+    const headerContainer = this.add.container(this.width / 2, headerY).setDepth(10);
 
-    const titleText = this.add.text(0, -5, '🏆 FESTIVAL LEADERBOARD 🏆', {
+    const titleSize = this.isMobile ? Math.min(this.width * 0.065, 24) : 32;
+    const titleText = this.add.text(0, -6, '🏆 FESTIVAL LEADERBOARD 🏆', {
       fontFamily: 'Fredoka, Outfit, sans-serif',
-      fontSize: '34px',
+      fontSize: `${titleSize}px`,
       fontStyle: 'bold',
       color: '#FFF8E1',
       stroke: '#E65100',
-      strokeThickness: 6,
-      shadow: { offsetX: 0, offsetY: 4, color: '#000000', blur: 8, fill: true }
+      strokeThickness: this.isMobile ? 4 : 6,
+      shadow: { offsetX: 0, offsetY: 3, color: '#000000', blur: 6, fill: true }
     }).setOrigin(0.5);
 
     const profile = getPlayerProfile();
     const profileSubtitle = profile.playerId
-      ? `Your Player ID: ${profile.playerId}`
+      ? `Your ID: ${profile.playerId}`
       : 'Top Global Runners';
 
-    const subText = this.add.text(0, 26, profileSubtitle, {
+    const subText = this.add.text(0, this.isMobile ? 20 : 26, profileSubtitle, {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '15px',
+      fontSize: this.isMobile ? '12px' : '14px',
       color: '#FFE082'
     }).setOrigin(0.5);
 
@@ -113,7 +107,7 @@ export default class LeaderboardScene extends Phaser.Scene {
 
   async fetchLeaderboard() {
     this.isLoading = true;
-    this.statusText.setText('⏳ Fetching Live Rankings from Temple...');
+    this.statusText.setText('⏳ Fetching Live Rankings...');
     this.statusText.setColor('#FFD700');
     this.statusText.setVisible(true);
     this.scoreContainer.removeAll(true);
@@ -146,39 +140,44 @@ export default class LeaderboardScene extends Phaser.Scene {
   renderScoresList() {
     this.scoreContainer.removeAll(true);
 
-    const startY = 100;
-    const rowHeight = 44;
-    const cardWidth = Math.min(this.width * 0.88, 680);
+    const startY = this.isMobile ? 70 : 96;
+    const rowHeight = this.isMobile ? 38 : 44;
+    const cardWidth = Math.min(this.width * 0.94, 660);
     const centerX = this.width / 2;
+
+    const rankX = centerX - cardWidth / 2 + (this.isMobile ? 12 : 28);
+    const playerX = centerX - cardWidth / 2 + (this.isMobile ? 55 : 120);
+    const scoreX = centerX + cardWidth / 2 - (this.isMobile ? 14 : 30);
 
     // Header row
     const headerBg = this.add.graphics();
     headerBg.fillStyle(0x0a0718, 0.95);
-    headerBg.fillRoundedRect(centerX - cardWidth / 2, startY - 2, cardWidth, 32, 8);
+    headerBg.fillRoundedRect(centerX - cardWidth / 2, startY - 2, cardWidth, 30, 8);
     headerBg.lineStyle(1, 0xffd700, 0.3);
-    headerBg.strokeRoundedRect(centerX - cardWidth / 2, startY - 2, cardWidth, 32, 8);
+    headerBg.strokeRoundedRect(centerX - cardWidth / 2, startY - 2, cardWidth, 30, 8);
     this.scoreContainer.add(headerBg);
 
-    const hRank = this.add.text(centerX - cardWidth / 2 + 30, startY + 14, 'RANK', {
-      fontFamily: 'Outfit, sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#B0BEC5'
+    const hRank = this.add.text(rankX, startY + 13, 'RANK', {
+      fontFamily: 'Outfit, sans-serif', fontSize: this.isMobile ? '11px' : '13px', fontStyle: 'bold', color: '#B0BEC5'
     }).setOrigin(0, 0.5);
 
-    const hPlayer = this.add.text(centerX - cardWidth / 2 + 130, startY + 14, 'PLAYER ID', {
-      fontFamily: 'Outfit, sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#B0BEC5'
+    const hPlayer = this.add.text(playerX, startY + 13, 'PLAYER ID', {
+      fontFamily: 'Outfit, sans-serif', fontSize: this.isMobile ? '11px' : '13px', fontStyle: 'bold', color: '#B0BEC5'
     }).setOrigin(0, 0.5);
 
-    const hScore = this.add.text(centerX + cardWidth / 2 - 35, startY + 14, 'BEST SCORE', {
-      fontFamily: 'Outfit, sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#B0BEC5'
+    const hScore = this.add.text(scoreX, startY + 13, 'SCORE', {
+      fontFamily: 'Outfit, sans-serif', fontSize: this.isMobile ? '11px' : '13px', fontStyle: 'bold', color: '#B0BEC5'
     }).setOrigin(1, 0.5);
 
     this.scoreContainer.add([hRank, hPlayer, hScore]);
 
-    // Rows (top up to 10 visible, scrollable / responsive)
-    const maxVisibleRows = Math.floor((this.height - startY - 95) / rowHeight);
-    const visibleScores = this.scores.slice(0, Math.max(5, maxVisibleRows));
+    // Rows calculation
+    const bottomNavSpace = this.isMobile ? 70 : 80;
+    const maxVisibleRows = Math.floor((this.height - startY - bottomNavSpace) / rowHeight);
+    const visibleScores = this.scores.slice(0, Math.max(4, maxVisibleRows));
 
     visibleScores.forEach((entry, idx) => {
-      const y = startY + 38 + idx * rowHeight;
+      const y = startY + 34 + idx * rowHeight;
       const rowContainer = this.add.container(0, 0);
 
       const rowBg = this.add.graphics();
@@ -193,9 +192,9 @@ export default class LeaderboardScene extends Phaser.Scene {
       }
 
       rowBg.fillStyle(fillColor, 0.88);
-      rowBg.fillRoundedRect(centerX - cardWidth / 2, y, cardWidth, rowHeight - 6, 8);
+      rowBg.fillRoundedRect(centerX - cardWidth / 2, y, cardWidth, rowHeight - 5, 8);
       rowBg.lineStyle(entry.isCurrentPlayer ? 2 : 1, strokeColor, strokeAlpha);
-      rowBg.strokeRoundedRect(centerX - cardWidth / 2, y, cardWidth, rowHeight - 6, 8);
+      rowBg.strokeRoundedRect(centerX - cardWidth / 2, y, cardWidth, rowHeight - 5, 8);
       rowContainer.add(rowBg);
 
       // Rank Icon / Number
@@ -205,30 +204,37 @@ export default class LeaderboardScene extends Phaser.Scene {
       else if (entry.rank === 2) { rankText = '🥈 2'; rankColor = '#CFD8DC'; }
       else if (entry.rank === 3) { rankText = '🥉 3'; rankColor = '#FFAB91'; }
 
-      const rText = this.add.text(centerX - cardWidth / 2 + 30, y + (rowHeight - 6) / 2, rankText, {
+      const rText = this.add.text(rankX, y + (rowHeight - 5) / 2, rankText, {
         fontFamily: 'Fredoka, Outfit, sans-serif',
-        fontSize: '16px',
+        fontSize: this.isMobile ? '13px' : '16px',
         fontStyle: 'bold',
         color: rankColor
       }).setOrigin(0, 0.5);
 
-      // Player ID
+      // Player ID (Truncated cleanly on mobile)
+      let nameStr = entry.playerId;
+      const maxNameLen = this.isMobile ? 12 : 22;
+      if (nameStr.length > maxNameLen) {
+        nameStr = nameStr.slice(0, maxNameLen - 1) + '…';
+      }
+      if (entry.isCurrentPlayer) nameStr += ' ⭐';
+
       const nameText = this.add.text(
-        centerX - cardWidth / 2 + 130,
-        y + (rowHeight - 6) / 2,
-        entry.playerId + (entry.isCurrentPlayer ? ' (YOU)' : ''),
+        playerX,
+        y + (rowHeight - 5) / 2,
+        nameStr,
         {
           fontFamily: 'Fredoka, Outfit, sans-serif',
-          fontSize: '17px',
+          fontSize: this.isMobile ? '14px' : '16px',
           fontStyle: 'bold',
           color: entry.isCurrentPlayer ? '#FFD700' : '#FFFFFF'
         }
       ).setOrigin(0, 0.5);
 
       // Score
-      const scoreText = this.add.text(centerX + cardWidth / 2 - 35, y + (rowHeight - 6) / 2, `${entry.score}`, {
+      const scoreText = this.add.text(scoreX, y + (rowHeight - 5) / 2, `${entry.score}`, {
         fontFamily: 'Fredoka, sans-serif',
-        fontSize: '20px',
+        fontSize: this.isMobile ? '15px' : '18px',
         fontStyle: 'bold',
         color: '#FFD700'
       }).setOrigin(1, 0.5);
@@ -236,99 +242,80 @@ export default class LeaderboardScene extends Phaser.Scene {
       rowContainer.add([rText, nameText, scoreText]);
       this.scoreContainer.add(rowContainer);
     });
-
-    // Offline / Demo notice if unconfigured
-    if (this.isOffline) {
-      const banner = this.add.text(centerX, this.height - 65, 'ℹ️ Connected in Local Demo Mode • Add keys in firebaseConfig.js for global live contest sync', {
-        fontFamily: 'Outfit, sans-serif',
-        fontSize: '12px',
-        color: '#FFE082'
-      }).setOrigin(0.5);
-      this.scoreContainer.add(banner);
-    }
   }
 
   createNavigationButtons() {
-    const bottomY = this.height - 35;
+    const bottomY = this.height - (this.isMobile ? 30 : 36);
     const centerX = this.width / 2;
+    const cardWidth = Math.min(this.width * 0.94, 660);
 
-    // 1. Back to Menu Button
-    const backBtn = this.add.container(centerX - 160, bottomY).setDepth(15);
-    const backBg = this.add.graphics();
-    backBg.fillStyle(0x2d174d, 0.9);
-    backBg.fillRoundedRect(-80, -18, 160, 36, 18);
-    backBg.lineStyle(1.5, 0xffd700, 0.4);
-    backBg.strokeRoundedRect(-80, -18, 160, 36, 18);
+    if (this.isMobile) {
+      // Mobile Navigation Buttons
+      const btnW = (cardWidth - 16) / 3;
+      const btnH = 34;
 
-    const backLabel = this.add.text(0, 0, '⬅️ MAIN MENU', {
-      fontFamily: 'Fredoka, sans-serif',
-      fontSize: '14px',
-      fontStyle: 'bold',
-      color: '#FFFFFF'
-    }).setOrigin(0.5);
+      const backX = centerX - cardWidth / 2 + btnW / 2;
+      const refX = centerX;
+      const editX = centerX + cardWidth / 2 - btnW / 2;
 
-    backBtn.add([backBg, backLabel]);
-    backBtn.setSize(160, 36);
-    backBtn.setInteractive({ useHandCursor: true });
-
-    backBtn.on('pointerdown', () => {
-      sounds.playClick();
-      this.scene.start('MenuScene');
-    });
-
-    // 2. Refresh Button
-    const refreshBtn = this.add.container(centerX, bottomY).setDepth(15);
-    const refBg = this.add.graphics();
-    refBg.fillStyle(0xff7722, 0.95);
-    refBg.fillRoundedRect(-65, -18, 130, 36, 18);
-    refBg.lineStyle(1.5, 0xffd700, 0.9);
-    refBg.strokeRoundedRect(-65, -18, 130, 36, 18);
-
-    const refLabel = this.add.text(0, 0, '🔄 REFRESH', {
-      fontFamily: 'Fredoka, sans-serif',
-      fontSize: '14px',
-      fontStyle: 'bold',
-      color: '#FFFFFF'
-    }).setOrigin(0.5);
-
-    refreshBtn.add([refBg, refLabel]);
-    refreshBtn.setSize(130, 36);
-    refreshBtn.setInteractive({ useHandCursor: true });
-
-    refreshBtn.on('pointerdown', () => {
-      sounds.playClick();
-      this.fetchLeaderboard();
-    });
-
-    // 3. Edit Player ID Button
-    const editBtn = this.add.container(centerX + 160, bottomY).setDepth(15);
-    const editBg = this.add.graphics();
-    editBg.fillStyle(0x2d174d, 0.9);
-    editBg.fillRoundedRect(-80, -18, 160, 36, 18);
-    editBg.lineStyle(1.5, 0xffd700, 0.4);
-    editBg.strokeRoundedRect(-80, -18, 160, 36, 18);
-
-    const editLabel = this.add.text(0, 0, '👤 EDIT PLAYER ID', {
-      fontFamily: 'Fredoka, sans-serif',
-      fontSize: '13px',
-      color: '#FFE082'
-    }).setOrigin(0.5);
-
-    editBtn.add([editBg, editLabel]);
-    editBtn.setSize(160, 36);
-    editBtn.setInteractive({ useHandCursor: true });
-
-    editBtn.on('pointerdown', () => {
-      sounds.playClick();
-      showProfileModal(() => {
-        this.scene.restart();
+      this.createNavBtn(backX, bottomY, btnW, btnH, '⬅️ MENU', 0x2d174d, () => {
+        sounds.playClick();
+        this.scene.start('MenuScene');
       });
-    });
+
+      this.createNavBtn(refX, bottomY, btnW, btnH, '🔄 REFRESH', 0xff7722, () => {
+        sounds.playClick();
+        this.fetchLeaderboard();
+      });
+
+      this.createNavBtn(editX, bottomY, btnW, btnH, '👤 SET ID', 0x2d174d, () => {
+        sounds.playClick();
+        showProfileModal(() => this.scene.restart());
+      });
+
+    } else {
+      // Desktop Navigation Buttons
+      const btnH = 38;
+      this.createNavBtn(centerX - 170, bottomY, 150, btnH, '⬅️ MAIN MENU', 0x2d174d, () => {
+        sounds.playClick();
+        this.scene.start('MenuScene');
+      });
+
+      this.createNavBtn(centerX, bottomY, 130, btnH, '🔄 REFRESH', 0xff7722, () => {
+        sounds.playClick();
+        this.fetchLeaderboard();
+      });
+
+      this.createNavBtn(centerX + 170, bottomY, 160, btnH, '👤 EDIT PLAYER ID', 0x2d174d, () => {
+        sounds.playClick();
+        showProfileModal(() => this.scene.restart());
+      });
+    }
   }
 
-  onResize(gameSize) {
-    this.width = gameSize.width;
-    this.height = gameSize.height;
+  createNavBtn(x, y, w, h, label, colorHex, onClick) {
+    const btn = this.add.container(x, y).setDepth(15);
+    const bg = this.add.graphics();
+    bg.fillStyle(colorHex, 0.92);
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+    bg.lineStyle(1.5, 0xffd700, 0.5);
+    bg.strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+
+    const txt = this.add.text(0, 0, label, {
+      fontFamily: 'Fredoka, sans-serif',
+      fontSize: this.isMobile ? '12px' : '13px',
+      fontStyle: 'bold',
+      color: '#FFFFFF'
+    }).setOrigin(0.5);
+
+    btn.add([bg, txt]);
+    btn.setSize(w, h);
+    btn.setInteractive({ useHandCursor: true });
+    btn.on('pointerdown', onClick);
+    return btn;
+  }
+
+  onResize() {
     this.scene.restart();
   }
 

@@ -14,24 +14,17 @@
     <link rel="stylesheet" href="/src/style.css" />
     <script>
       window.onerror = function(msg, url, line, col, err) {
-        var el = document.getElementById('debug-error-box');
-        if (!el) {
-          el = document.createElement('div');
-          el.id = 'debug-error-box';
-          el.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;background:#b71c1c;color:#fff;z-index:999999;padding:16px;border-radius:10px;font-family:monospace;font-size:15px;box-shadow:0 6px 25px rgba(0,0,0,0.9);line-height:1.5;';
-          document.body.appendChild(el);
-        }
-        el.innerHTML += '<div><b>⚠️ JAVASCRIPT ERROR:</b> ' + msg + '<br><small style="color:#ffcdd2;">' + url + ':' + line + '</small></div>';
+        if (!url || url.includes('chrome-extension') || url.includes('moz-extension')) return;
+        console.error('[Global Error]', msg, url, line, err);
       };
       window.addEventListener('unhandledrejection', function(e) {
-        var el = document.getElementById('debug-error-box');
-        if (!el) {
-          el = document.createElement('div');
-          el.id = 'debug-error-box';
-          el.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;background:#b71c1c;color:#fff;z-index:999999;padding:16px;border-radius:10px;font-family:monospace;font-size:15px;box-shadow:0 6px 25px rgba(0,0,0,0.9);line-height:1.5;';
-          document.body.appendChild(el);
+        var reason = e.reason && e.reason.message ? e.reason.message : String(e.reason || '');
+        // Ignore known third-party browser extension / canvas context inspection errors
+        if (reason.includes('drawImage') || reason.includes('Extension') || reason.includes('ResizeObserver')) {
+          console.warn('[Ignored external rejection]:', reason);
+          return;
         }
-        el.innerHTML += '<div><b>⚠️ PROMISE REJECTION:</b> ' + (e.reason && e.reason.message ? e.reason.message : e.reason) + '</div>';
+        console.error('[Unhandled Promise Rejection]:', e.reason);
       });
     </script>
   </head>
@@ -39,13 +32,22 @@
     <div id="app-container">
       <div id="game-container"></div>
       
-      <!-- Mobile Quick Touch Controls -->
+      <!-- Fullscreen Toggle Button -->
+      <button id="btn-fullscreen" aria-label="Toggle Fullscreen" title="Toggle Fullscreen">⛶</button>
+
+      <!-- Mobile Portrait Orientation Suggestion Pill -->
+      <div id="rotate-hint">
+        <span>🔄 Rotate for wide screen</span>
+        <button id="btn-dismiss-rotate" aria-label="Dismiss">✕</button>
+      </div>
+
+      <!-- Mobile Quick Touch Controls (Shown during gameplay) -->
       <div id="touch-controls" class="touch-controls">
         <div class="touch-col">
-          <button id="btn-up" class="touch-btn" aria-label="Switch Lane Up">▲</button>
-          <button id="btn-down" class="touch-btn" aria-label="Switch Lane Down">▼</button>
+          <button id="btn-up" class="touch-btn" aria-label="Switch Track Up">▲</button>
+          <button id="btn-down" class="touch-btn" aria-label="Switch Track Down">▼</button>
         </div>
-        <button id="btn-jump" class="touch-btn jump-btn" aria-label="Jump">⚡ JUMP</button>
+        <button id="btn-jump" class="touch-btn jump-btn" aria-label="Jump Obstacle">⚡ JUMP</button>
       </div>
 
       <!-- Player Profile Setup Modal (First launch & Profile editing) -->
@@ -72,5 +74,48 @@
     </div>
     
     <script type="module" src="/src/main.js"></script>
+    <script>
+      // Fullscreen handling
+      var fsBtn = document.getElementById('btn-fullscreen');
+      if (fsBtn) {
+        fsBtn.addEventListener('click', function() {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(function() {});
+            fsBtn.textContent = '🗗';
+          } else {
+            if (document.exitFullscreen) {
+              document.exitFullscreen().catch(function() {});
+              fsBtn.textContent = '⛶';
+            }
+          }
+        });
+      }
+
+      // Rotate hint handling
+      var rotateHint = document.getElementById('rotate-hint');
+      var dismissRotate = document.getElementById('btn-dismiss-rotate');
+      var isMobileDevice = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 800);
+      
+      function checkOrientation() {
+        if (!rotateHint) return;
+        if (isMobileDevice && window.innerHeight > window.innerWidth && !sessionStorage.getItem('dismiss_rotate')) {
+          rotateHint.classList.add('show');
+        } else {
+          rotateHint.classList.remove('show');
+        }
+      }
+
+      if (dismissRotate) {
+        dismissRotate.addEventListener('click', function(e) {
+          e.stopPropagation();
+          sessionStorage.setItem('dismiss_rotate', 'true');
+          if (rotateHint) rotateHint.classList.remove('show');
+        });
+      }
+
+      window.addEventListener('resize', checkOrientation);
+      window.addEventListener('orientationchange', checkOrientation);
+      checkOrientation();
+    </script>
   </body>
 </html>

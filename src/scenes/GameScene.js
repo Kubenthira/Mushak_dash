@@ -106,11 +106,21 @@ export default class GameScene extends Phaser.Scene {
   }
 
   updateLanes() {
-    this.lanesY = [
-      this.height * 0.74, // Top track on road
-      this.height * 0.83, // Middle track on road
-      this.height * 0.92  // Bottom track on road
-    ];
+    const isPortrait = this.height > this.width;
+    if (isPortrait) {
+      // In mobile portrait, the street road sits lower down to give generous sky view
+      this.lanesY = [
+        this.height * 0.69, // Top track on road
+        this.height * 0.78, // Middle track on road
+        this.height * 0.87  // Bottom track on road
+      ];
+    } else {
+      this.lanesY = [
+        this.height * 0.74, // Top track on road
+        this.height * 0.83, // Middle track on road
+        this.height * 0.92  // Bottom track on road
+      ];
+    }
   }
 
   onResize(gameSize) {
@@ -141,8 +151,11 @@ export default class GameScene extends Phaser.Scene {
       this.bgComposed.setScale(this.composedScaleFactor);
     }
     this.drawLaneMarkers();
+
+    const isPortrait = this.height > this.width;
+    const playerX = Math.max(70, this.width * (isPortrait ? 0.15 : 0.18));
     if (this.playerContainer && !this.isDead) {
-      this.playerContainer.x = this.width * 0.18;
+      this.playerContainer.x = playerX;
       this.playerContainer.y = this.lanesY[this.currentLane];
     }
   }
@@ -180,26 +193,31 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createPlayer() {
-    const playerX = this.width * 0.18;
+    const isPortrait = this.height > this.width;
+    const playerX = Math.max(70, this.width * (isPortrait ? 0.15 : 0.18));
     this.playerContainer = this.add.container(playerX, this.lanesY[this.currentLane]);
-    this.playerContainer.setDepth(10 + this.currentLane * 15 + 5); // Lane-based depth sorting
+    this.playerContainer.setDepth(10 + this.currentLane * 15 + 5);
+
+    // Proportional character scaling for small screens
+    const scaleMod = Phaser.Math.Clamp(this.height / 720, 0.68, 1.05);
+    this.playerScale = PLAYER_CONFIG.scale * scaleMod;
 
     this.blessingAura = this.add.graphics();
     this.blessingAura.fillStyle(0xffd700, 0.35);
-    this.blessingAura.fillCircle(0, -10, 95);
+    this.blessingAura.fillCircle(0, -10 * scaleMod, 95 * scaleMod);
     this.blessingAura.lineStyle(3, 0xffffff, 0.9);
-    this.blessingAura.strokeCircle(0, -10, 95);
+    this.blessingAura.strokeCircle(0, -10 * scaleMod, 95 * scaleMod);
     this.blessingAura.setVisible(false);
 
     this.playerSprite = this.add.sprite(0, 0, 'mushak_protag')
-      .setScale(PLAYER_CONFIG.scale)
+      .setScale(this.playerScale)
       .setOrigin(0.5, 0.72);
 
     this.playerSprite.play('mushak_run');
 
     this.shadow = this.add.graphics();
     this.shadow.fillStyle(0x000000, 0.38);
-    this.shadow.fillEllipse(0, 32, 78, 24);
+    this.shadow.fillEllipse(0, 32 * scaleMod, 78 * scaleMod, 24 * scaleMod);
 
     this.playerContainer.add([this.shadow, this.blessingAura, this.playerSprite]);
     this.dustEmitter.startFollow(this.playerContainer, -30, 30);
@@ -222,6 +240,38 @@ export default class GameScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-RIGHT', () => this.jump());
     this.input.keyboard.on('keydown-D', () => this.jump());
 
+    // Show Mobile Touch Controls if on mobile/touch device
+    const touchControls = document.getElementById('touch-controls');
+    if (touchControls) {
+      touchControls.style.display = 'flex';
+    }
+
+    const handlePress = (fn) => {
+      return (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        if (navigator.vibrate) navigator.vibrate(10);
+        fn();
+      };
+    };
+
+    const btnUp = document.getElementById('btn-up');
+    const btnDown = document.getElementById('btn-down');
+    const btnJump = document.getElementById('btn-jump');
+
+    if (btnUp) {
+      btnUp.onpointerdown = handlePress(() => this.switchLane(-1));
+    }
+    if (btnDown) {
+      btnDown.onpointerdown = handlePress(() => this.switchLane(1));
+    }
+    if (btnJump) {
+      btnJump.onpointerdown = handlePress(() => this.jump());
+    }
+
+    // Fullscreen touch and swipe gesture support
     let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
@@ -238,15 +288,18 @@ export default class GameScene extends Phaser.Scene {
       const duration = this.time.now - touchStartTime;
 
       if (duration < 450) {
-        if (Math.abs(dy) > 35 && Math.abs(dy) > Math.abs(dx)) {
+        // Vertical swipe takes priority
+        if (Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)) {
           if (dy < 0) this.switchLane(-1);
           else this.switchLane(1);
-        } else if (dx > 35 || dy < -35) {
+        } else if (dx > 30) {
+          // Horizontal right swipe to jump
           this.jump();
-        } else if (Math.abs(dx) < 20 && Math.abs(dy) < 20) {
-          if (pointer.x > this.width * 0.6) {
+        } else if (Math.abs(dx) < 22 && Math.abs(dy) < 22) {
+          // Tap zones: Right half to jump, Left top to go up, Left bottom to go down
+          if (pointer.x > this.width * 0.55) {
             this.jump();
-          } else if (pointer.y < this.height * 0.5) {
+          } else if (pointer.y < this.lanesY[1]) {
             this.switchLane(-1);
           } else {
             this.switchLane(1);
@@ -255,49 +308,68 @@ export default class GameScene extends Phaser.Scene {
       }
     });
 
-    const btnUp = document.getElementById('btn-up');
-    const btnDown = document.getElementById('btn-down');
-    const btnJump = document.getElementById('btn-jump');
-
-    if (btnUp) btnUp.onclick = () => this.switchLane(-1);
-    if (btnDown) btnDown.onclick = () => this.switchLane(1);
-    if (btnJump) btnJump.onclick = () => this.jump();
+    this.events.once('shutdown', () => {
+      if (touchControls) touchControls.style.display = 'none';
+    });
   }
 
   createHUD() {
+    const isMobile = this.width < 600;
+    const hudW = isMobile ? Math.min(this.width * 0.65, 230) : 380;
+    const hudH = isMobile ? 42 : 54;
+    const hudX = isMobile ? 14 : 30;
+    const hudY = isMobile ? 12 : 20;
+
     const hudBar = this.add.graphics();
-    hudBar.fillStyle(0x0f0c20, 0.75);
-    hudBar.fillRoundedRect(30, 20, 380, 54, 16);
+    hudBar.fillStyle(0x0f0c20, 0.82);
+    hudBar.fillRoundedRect(hudX, hudY, hudW, hudH, hudH / 2);
     hudBar.lineStyle(1.5, 0xffd700, 0.4);
-    hudBar.strokeRoundedRect(30, 20, 380, 54, 16);
+    hudBar.strokeRoundedRect(hudX, hudY, hudW, hudH, hudH / 2);
     hudBar.setDepth(100);
 
-    this.scoreText = this.add.text(50, 34, 'SCORE: 0', {
+    const scoreFontSize = isMobile ? '15px' : '22px';
+    const scoreX = hudX + (isMobile ? 14 : 22);
+    const scoreY = hudY + hudH / 2;
+
+    this.scoreText = this.add.text(scoreX, scoreY, 'SCORE: 0', {
       fontFamily: 'Fredoka, Outfit, sans-serif',
-      fontSize: '22px',
+      fontSize: scoreFontSize,
       fontStyle: 'bold',
       color: '#FFFFFF'
-    }).setDepth(101);
+    }).setOrigin(0, 0.5).setDepth(101);
 
-    this.modakIcon = this.add.image(280, 47, 'modak_item').setScale(0.12).setDepth(101);
-    this.modakText = this.add.text(305, 35, '0', {
+    const modakIconX = hudX + hudW - (isMobile ? 48 : 95);
+    const modakTextX = modakIconX + (isMobile ? 18 : 25);
+
+    this.modakIcon = this.add.image(modakIconX, scoreY, 'modak_item')
+      .setScale(isMobile ? 0.08 : 0.12)
+      .setDepth(101);
+
+    this.modakText = this.add.text(modakTextX, scoreY, '0', {
       fontFamily: 'Fredoka, Outfit, sans-serif',
-      fontSize: '22px',
+      fontSize: scoreFontSize,
       fontStyle: 'bold',
       color: '#FFD700'
-    }).setDepth(101);
+    }).setOrigin(0, 0.5).setDepth(101);
 
-    this.blessingBanner = this.add.container(this.width / 2, 45);
+    // Blessing Banner
+    const bannerW = isMobile ? Math.min(this.width * 0.65, 220) : 280;
+    const bannerH = isMobile ? 30 : 36;
+    const bannerY = isMobile ? hudY + hudH + 20 : 45;
+    const bannerX = this.width / 2;
+
+    this.blessingBanner = this.add.container(bannerX, bannerY);
     this.blessingBanner.setDepth(102);
+
     const bannerBg = this.add.graphics();
     bannerBg.fillStyle(0xff9800, 0.95);
-    bannerBg.fillRoundedRect(-140, -18, 280, 36, 18);
+    bannerBg.fillRoundedRect(-bannerW / 2, -bannerH / 2, bannerW, bannerH, bannerH / 2);
     bannerBg.lineStyle(2, 0xffffff, 0.9);
-    bannerBg.strokeRoundedRect(-140, -18, 280, 36, 18);
+    bannerBg.strokeRoundedRect(-bannerW / 2, -bannerH / 2, bannerW, bannerH, bannerH / 2);
 
     const bannerText = this.add.text(0, 0, '✨ GANESHA BLESSING ✨', {
       fontFamily: 'Fredoka, sans-serif',
-      fontSize: '16px',
+      fontSize: isMobile ? '12px' : '16px',
       fontStyle: 'bold',
       color: '#FFFFFF'
     }).setOrigin(0.5);
@@ -545,7 +617,10 @@ export default class GameScene extends Phaser.Scene {
 
   spawnWave() {
     this.waveCount++;
-    const spawnX = this.width + 120;
+    const playerPosX = this.playerContainer ? this.playerContainer.x : 100;
+    const isPortrait = this.height > this.width;
+    const minTravelDist = isPortrait ? 650 : 750;
+    const spawnX = Math.max(this.width + 100, playerPosX + minTravelDist);
 
     // Alternate lanes across waves so player moves between tracks
     const availableLanes = [0, 1, 2].filter((l) => l !== this.lastModakLane);

@@ -15,6 +15,7 @@ export default class MenuScene extends Phaser.Scene {
 
     const width = this.scale.width;
     const height = this.scale.height;
+    const isMobile = width < 768 || width < height;
 
     // 1. 3-Layer Parallax Street Background
     const texH = 724;
@@ -35,7 +36,7 @@ export default class MenuScene extends Phaser.Scene {
       .setScale(this.scaleFactor)
       .setDepth(2);
 
-    // Festive gradient overlay (on top of all 3 background layers)
+    // Festive gradient overlay
     this.overlay = this.add.graphics();
     this.overlay.fillGradientStyle(0x1a0b2e, 0x1a0b2e, 0x3d1b04, 0x3d1b04, 0.65, 0.65, 0.65, 0.65);
     this.overlay.fillRect(0, 0, width, height);
@@ -43,56 +44,70 @@ export default class MenuScene extends Phaser.Scene {
 
     // 2. Ambient Particles
     this.particles = this.add.particles(0, 0, 'sparkle_particle', {
-      x: { min: 40, max: width - 40 },
-      y: { min: height * 0.3, max: height },
-      speedY: { min: -50, max: -15 },
-      speedX: { min: -15, max: 15 },
-      scale: { start: 0.6, end: 0 },
-      alpha: { start: 0.8, end: 0 },
-      lifespan: 2500,
-      frequency: 140
+      x: { min: 20, max: width - 20 },
+      y: { min: height * 0.2, max: height },
+      speedY: { min: -45, max: -12 },
+      speedX: { min: -12, max: 12 },
+      scale: { start: 0.5, end: 0 },
+      alpha: { start: 0.75, end: 0 },
+      lifespan: 2200,
+      frequency: 150
     });
     this.particles.setDepth(4);
 
-    // 3. Top High Score & Modak Badge + Profile Pill
+    // 3. Top High Score & Modak Badge + Profile Pill (Responsive)
     const highScore = parseInt(localStorage.getItem(STORAGE_KEYS.HIGH_SCORE) || '0', 10);
     const modakCount = parseInt(localStorage.getItem(STORAGE_KEYS.MODAK_COUNT) || '0', 10);
     const profile = getPlayerProfile();
 
+    const pillWidth = Math.min(width * 0.92, 480);
+    const pillHeight = isMobile ? 42 : 48;
+    const pillY = isMobile ? 20 : 28;
+
     const scoreCard = this.add.graphics();
-    scoreCard.fillStyle(0x0f0c20, 0.85);
-    scoreCard.fillRoundedRect(width / 2 - 240, 24, 480, 48, 24);
+    scoreCard.fillStyle(0x0f0c20, 0.88);
+    scoreCard.fillRoundedRect(width / 2 - pillWidth / 2, pillY, pillWidth, pillHeight, pillHeight / 2);
     scoreCard.lineStyle(2, 0xffd700, 0.6);
-    scoreCard.strokeRoundedRect(width / 2 - 240, 24, 480, 48, 24);
+    scoreCard.strokeRoundedRect(width / 2 - pillWidth / 2, pillY, pillWidth, pillHeight, pillHeight / 2);
     scoreCard.setDepth(10);
 
-    this.add.image(width / 2 - 200, 48, 'modak_item').setScale(0.12).setDepth(11);
+    const iconX = width / 2 - pillWidth / 2 + (isMobile ? 22 : 36);
+    const bestX = iconX + (isMobile ? 20 : 26);
+    const modakX = bestX + (isMobile ? 90 : 120);
+    const profileX = width / 2 + pillWidth / 2 - (isMobile ? 20 : 36);
 
-    this.add.text(width / 2 - 170, 36, `BEST: ${highScore}`, {
+    this.add.image(iconX, pillY + pillHeight / 2, 'modak_item')
+      .setScale(isMobile ? 0.09 : 0.12)
+      .setDepth(11);
+
+    this.add.text(bestX, pillY + pillHeight / 2, `BEST: ${highScore}`, {
       fontFamily: 'Fredoka, Outfit, sans-serif',
-      fontSize: '18px',
+      fontSize: isMobile ? '14px' : '17px',
       color: '#FFD700',
       fontStyle: 'bold'
-    }).setDepth(11);
+    }).setOrigin(0, 0.5).setDepth(11);
 
-    this.add.text(width / 2 - 50, 37, `🥟 ${modakCount}`, {
+    this.add.text(modakX, pillY + pillHeight / 2, `🥟 ${modakCount}`, {
       fontFamily: 'Fredoka, Outfit, sans-serif',
-      fontSize: '16px',
+      fontSize: isMobile ? '13px' : '16px',
       color: '#FFE082'
-    }).setDepth(11);
+    }).setOrigin(0, 0.5).setDepth(11);
 
-    // Profile Tag Button (clickable to edit profile)
+    const displayName = profile.playerId
+      ? (profile.playerId.length > 10 ? profile.playerId.slice(0, 9) + '…' : profile.playerId)
+      : 'Set ID';
+
     const profileTag = this.add.text(
-      width / 2 + 70,
-      37,
-      profile.playerId ? `👤 ${profile.playerId}` : '👤 Set Player ID',
+      profileX,
+      pillY + pillHeight / 2,
+      `👤 ${displayName}`,
       {
         fontFamily: 'Fredoka, Outfit, sans-serif',
-        fontSize: '15px',
+        fontSize: isMobile ? '13px' : '15px',
         color: '#81C784',
         fontStyle: 'bold'
       }
-    ).setDepth(11).setInteractive({ useHandCursor: true });
+    ).setOrigin(1, 0.5).setDepth(11).setInteractive({ useHandCursor: true });
 
     profileTag.on('pointerdown', () => {
       sounds.playClick();
@@ -101,9 +116,18 @@ export default class MenuScene extends Phaser.Scene {
       });
     });
 
-    // 4. Main Title
-    const titleContainer = this.add.container(width * 0.35, height * 0.38);
-    titleContainer.setDepth(10);
+    if (isMobile) {
+      this.createMobileLayout(width, height);
+    } else {
+      this.createDesktopLayout(width, height);
+    }
+
+    this.scale.on('resize', this.onResize, this);
+  }
+
+  createDesktopLayout(width, height) {
+    // 4. Main Title (Left Column)
+    const titleContainer = this.add.container(width * 0.35, height * 0.38).setDepth(10);
 
     const subTitle = this.add.text(0, -42, '✨ VINAYAKA CHATURTHI FESTIVAL RUNNER ✨', {
       fontFamily: 'Outfit, sans-serif',
@@ -136,7 +160,7 @@ export default class MenuScene extends Phaser.Scene {
       ease: 'Sine.easeInOut'
     });
 
-    // 5. Hero Character on the Right (scaled up)
+    // 5. Hero Character on the Right
     const characterGlow = this.add.graphics();
     characterGlow.fillStyle(0xffd700, 0.22);
     characterGlow.fillCircle(width * 0.76, height * 0.44, 160);
@@ -163,81 +187,14 @@ export default class MenuScene extends Phaser.Scene {
       ease: 'Quad.easeInOut'
     });
 
-    // 6. Buttons Container (Play Run + Leaderboard)
-    // Play Button
-    const startBtnContainer = this.add.container(width * 0.25, height * 0.62);
-    startBtnContainer.setDepth(10);
-
-    const btnBg = this.add.graphics();
-    btnBg.fillStyle(0xff7722, 1);
-    btnBg.fillRoundedRect(-110, -32, 220, 64, 32);
-    btnBg.lineStyle(3, 0xffd700, 1);
-    btnBg.strokeRoundedRect(-110, -32, 220, 64, 32);
-
-    const btnText = this.add.text(0, 0, 'PLAY RUN', {
-      fontFamily: 'Fredoka, Outfit, sans-serif',
-      fontSize: '24px',
-      fontStyle: 'bold',
-      color: '#FFFFFF',
-      shadow: { offsetX: 0, offsetY: 3, color: '#6A1B9A', blur: 6, fill: true }
-    }).setOrigin(0.5);
-
-    startBtnContainer.add([btnBg, btnText]);
-    startBtnContainer.setSize(220, 64);
-    startBtnContainer.setInteractive({ useHandCursor: true });
-
-    this.tweens.add({
-      targets: startBtnContainer,
-      scaleX: 1.05,
-      scaleY: 1.05,
-      duration: 750,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
-
-    const startGame = () => {
-      sounds.init();
-      sounds.playClick();
-
-      this.cameras.main.fade(300, 26, 11, 46, false, (camera, progress) => {
-        if (progress === 1) {
-          this.scene.start('GameScene');
-        }
-      });
-    };
-
-    startBtnContainer.on('pointerdown', startGame);
-    this.input.keyboard.on('keydown-SPACE', startGame);
-    this.input.keyboard.on('keydown-ENTER', startGame);
-
-    // Leaderboard Button
-    const leaderboardBtn = this.add.container(width * 0.46, height * 0.62);
-    leaderboardBtn.setDepth(10);
-
-    const lbBg = this.add.graphics();
-    lbBg.fillStyle(0x2d174d, 0.95);
-    lbBg.fillRoundedRect(-110, -32, 220, 64, 32);
-    lbBg.lineStyle(2.5, 0xffd700, 0.8);
-    lbBg.strokeRoundedRect(-110, -32, 220, 64, 32);
-
-    const lbText = this.add.text(0, 0, '🏆 LEADERBOARD', {
-      fontFamily: 'Fredoka, Outfit, sans-serif',
-      fontSize: '20px',
-      fontStyle: 'bold',
-      color: '#FFE082'
-    }).setOrigin(0.5);
-
-    leaderboardBtn.add([lbBg, lbText]);
-    leaderboardBtn.setSize(220, 64);
-    leaderboardBtn.setInteractive({ useHandCursor: true });
-
-    leaderboardBtn.on('pointerdown', () => {
+    // 6. Buttons
+    this.createButton(width * 0.25, height * 0.62, 220, 64, 'PLAY RUN', 0xff7722, true, () => this.startGame());
+    this.createButton(width * 0.46, height * 0.62, 220, 64, '🏆 LEADERBOARD', 0x2d174d, false, () => {
       sounds.playClick();
       this.scene.start('LeaderboardScene');
     });
 
-    // 7. Horizontal How-To-Play Footer Bar
+    // 7. Footer Instructions
     const infoBg = this.add.graphics();
     infoBg.fillStyle(0x0f0c20, 0.88);
     infoBg.fillRoundedRect(width * 0.08, height * 0.82, width * 0.84, 90, 18);
@@ -261,26 +218,161 @@ export default class MenuScene extends Phaser.Scene {
         color: '#FFFFFF'
       }).setDepth(11);
     });
-
-    this.scale.on('resize', this.resize, this);
   }
 
-  resize(gameSize) {
-    const texH = 724;
-    this.scaleFactor = gameSize.height / texH;
+  createMobileLayout(width, height) {
+    const isPortrait = height >= width;
+    const centerX = width / 2;
 
-    if (this.bgLayer1) {
-      this.bgLayer1.setSize(gameSize.width / this.scaleFactor, gameSize.height / this.scaleFactor);
-      this.bgLayer1.setScale(this.scaleFactor);
+    // Title Section
+    const titleY = isPortrait ? height * 0.19 : height * 0.22;
+    const titleContainer = this.add.container(centerX, titleY).setDepth(10);
+
+    const subTitle = this.add.text(0, -26, '✨ VINAYAKA CHATURTHI FESTIVAL RUNNER ✨', {
+      fontFamily: 'Outfit, sans-serif',
+      fontSize: Math.min(width * 0.034, 13) + 'px',
+      letterSpacing: 1.5,
+      color: '#FFE082',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    const titleFontSize = Math.min(width * 0.11, 46);
+    const titleText = this.add.text(0, 14, 'MUSHAK DASH', {
+      fontFamily: 'Fredoka, Outfit, sans-serif',
+      fontSize: `${titleFontSize}px`,
+      fontStyle: 'bold',
+      color: '#FFF8E1',
+      stroke: '#E65100',
+      strokeThickness: 6,
+      shadow: { offsetX: 0, offsetY: 4, color: '#000000', blur: 8, stroke: true, fill: true }
+    }).setOrigin(0.5);
+
+    titleContainer.add([subTitle, titleText]);
+
+    // Hero Character in Middle
+    const charY = isPortrait ? height * 0.42 : height * 0.50;
+    const charScale = isPortrait ? Math.min(width * 0.0028, 1.1) : Math.min(height * 0.002, 0.95);
+
+    const characterGlow = this.add.graphics();
+    characterGlow.fillStyle(0xffd700, 0.2);
+    characterGlow.fillCircle(centerX, charY, 100 * charScale);
+    characterGlow.setDepth(10);
+
+    const charShadow = this.add.graphics();
+    charShadow.fillStyle(0x000000, 0.35);
+    charShadow.fillEllipse(centerX, charY + 65 * charScale, 75 * charScale, 22 * charScale);
+    charShadow.setDepth(10);
+
+    this.character = this.add.sprite(centerX, charY, 'mushak_protag')
+      .setScale(charScale)
+      .setDepth(11);
+    this.character.play('mushak_run');
+
+    this.tweens.add({
+      targets: this.character,
+      y: charY - 10,
+      scaleX: charScale * 0.96,
+      scaleY: charScale * 1.04,
+      duration: 380,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Quad.easeInOut'
+    });
+
+    // Buttons
+    const btnW = Math.min(width * 0.82, 270);
+    const btnH = isPortrait ? 52 : 46;
+
+    if (isPortrait) {
+      const playY = height * 0.65;
+      const lbY = playY + btnH + 16;
+      this.createButton(centerX, playY, btnW, btnH, '⚡ PLAY RUN', 0xff7722, true, () => this.startGame());
+      this.createButton(centerX, lbY, btnW, btnH, '🏆 LEADERBOARD', 0x2d174d, false, () => {
+        sounds.playClick();
+        this.scene.start('LeaderboardScene');
+      });
+
+      // Bottom Touch Tip
+      const tipY = height * 0.88;
+      const tipBg = this.add.graphics();
+      tipBg.fillStyle(0x0f0c20, 0.85);
+      tipBg.fillRoundedRect(centerX - btnW / 2, tipY - 18, btnW, 36, 18);
+      tipBg.lineStyle(1.5, 0xffd700, 0.4);
+      tipBg.strokeRoundedRect(centerX - btnW / 2, tipY - 18, btnW, 36, 18);
+      tipBg.setDepth(10);
+
+      this.add.text(centerX, tipY, '👆 Tap or Swipe to Switch Lanes & Jump', {
+        fontFamily: 'Outfit, sans-serif',
+        fontSize: '12px',
+        color: '#FFE082'
+      }).setOrigin(0.5).setDepth(11);
+    } else {
+      // Landscape Mobile: Side by Side Buttons
+      const playX = centerX - btnW * 0.55;
+      const lbX = centerX + btnW * 0.55;
+      const btnY = height * 0.80;
+      this.createButton(playX, btnY, btnW * 0.9, btnH, '⚡ PLAY RUN', 0xff7722, true, () => this.startGame());
+      this.createButton(lbX, btnY, btnW * 0.9, btnH, '🏆 LEADERBOARD', 0x2d174d, false, () => {
+        sounds.playClick();
+        this.scene.start('LeaderboardScene');
+      });
     }
-    if (this.bgLayer2) {
-      this.bgLayer2.setSize(gameSize.width / this.scaleFactor, gameSize.height / this.scaleFactor);
-      this.bgLayer2.setScale(this.scaleFactor);
+  }
+
+  createButton(x, y, w, h, label, colorHex, isPrimary, onClick) {
+    const btn = this.add.container(x, y).setDepth(12);
+
+    const bg = this.add.graphics();
+    bg.fillStyle(colorHex, 0.95);
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+    bg.lineStyle(2, 0xffd700, isPrimary ? 1 : 0.6);
+    bg.strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+
+    const txt = this.add.text(0, 0, label, {
+      fontFamily: 'Fredoka, Outfit, sans-serif',
+      fontSize: `${Math.min(h * 0.42, 22)}px`,
+      fontStyle: 'bold',
+      color: '#FFFFFF'
+    }).setOrigin(0.5);
+
+    btn.add([bg, txt]);
+    btn.setSize(w, h);
+    btn.setInteractive({ useHandCursor: true });
+
+    if (isPrimary) {
+      this.tweens.add({
+        targets: btn,
+        scaleX: 1.04,
+        scaleY: 1.04,
+        duration: 750,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
     }
-    if (this.bgLayer3) {
-      this.bgLayer3.setSize(gameSize.width / this.scaleFactor, gameSize.height / this.scaleFactor);
-      this.bgLayer3.setScale(this.scaleFactor);
+
+    btn.on('pointerdown', onClick);
+
+    if (isPrimary) {
+      this.input.keyboard.on('keydown-SPACE', onClick);
+      this.input.keyboard.on('keydown-ENTER', onClick);
     }
+
+    return btn;
+  }
+
+  startGame() {
+    sounds.init();
+    sounds.playClick();
+    this.cameras.main.fade(280, 26, 11, 46, false, (camera, progress) => {
+      if (progress === 1) {
+        this.scene.start('GameScene');
+      }
+    });
+  }
+
+  onResize() {
+    this.scene.restart();
   }
 
   update() {

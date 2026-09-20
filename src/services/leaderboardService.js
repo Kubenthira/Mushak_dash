@@ -145,12 +145,18 @@ export async function submitScore(playerId, score, meta = {}) {
       };
     }
   } catch (error) {
-    console.error('[LeaderboardService] Score submission error:', error);
+    console.warn('[LeaderboardService] Score submission error (saving locally):', error);
+    const prevBest = parseInt(localStorage.getItem(PROFILE_STORAGE_KEYS.LOCAL_BEST) || '0', 10);
+    const isNewBest = numericScore > prevBest;
+    if (isNewBest) {
+      localStorage.setItem(PROFILE_STORAGE_KEYS.LOCAL_BEST, numericScore.toString());
+    }
     return {
-      success: false,
-      isNewBest: false,
-      finalScore: numericScore,
-      message: error.message || 'Network error submitting score'
+      success: true,
+      isOffline: true,
+      isNewBest,
+      finalScore: Math.max(numericScore, prevBest),
+      message: 'Score saved locally'
     };
   }
 }
@@ -184,7 +190,7 @@ export async function getTopScores(limitCount = 20) {
       success: true,
       scores: offlineScores,
       isOffline: true,
-      message: 'Demo Mode (Add your Firebase keys in firebaseConfig.js for global live rankings)'
+      message: 'Local offline rankings (Add Firestore rules/keys for global live rankings)'
     };
   }
 
@@ -226,12 +232,27 @@ export async function getTopScores(limitCount = 20) {
       message: scores.length === 0 ? 'No scores recorded yet. Be the first to set a record!' : 'Live scores loaded'
     };
   } catch (error) {
-    console.error('[LeaderboardService] Fetch scores error:', error);
+    console.warn('[LeaderboardService] Fetch scores error (falling back to local):', error);
+    const profile = getPlayerProfile();
+    const localBest = parseInt(localStorage.getItem(PROFILE_STORAGE_KEYS.LOCAL_BEST) || '0', 10);
+    const offlineScores = [];
+
+    if (profile.playerId && localBest > 0) {
+      offlineScores.push({
+        rank: 1,
+        id: 'local_user',
+        playerId: profile.playerId,
+        score: localBest,
+        isCurrentPlayer: true,
+        timestamp: Date.now()
+      });
+    }
+
     return {
-      success: false,
-      scores: [],
-      isOffline: false,
-      message: error.message || 'Could not connect to leaderboard service'
+      success: true,
+      scores: offlineScores,
+      isOffline: true,
+      message: 'Local offline rankings (Add Firestore rules/keys for global live rankings)'
     };
   }
 }
