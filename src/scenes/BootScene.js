@@ -47,7 +47,6 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('bg_layer1', 'assets/layer1.png');
     this.load.image('bg_layer2', 'assets/layer2.png');
     this.load.image('bg_layer3', 'assets/layer3.png');
-    this.load.image('composed_bg', 'assets/composed.png');
     this.load.image('modak_item', 'assets/modak.png');
     this.load.image('mushak_protag', 'assets/protag.png');
     this.load.image('obstacle_puddle', 'assets/puddle.png');

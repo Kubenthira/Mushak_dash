@@ -58,23 +58,6 @@ export default class GameScene extends Phaser.Scene {
       .setScale(this.scaleFactor)
       .setDepth(2);
 
-    // Composed Background Layer (Used during the 3-loop cycle)
-    const compTexH = 362;
-    this.composedScaleFactor = this.height / compTexH;
-    this.bgComposed = this.add.tileSprite(0, 0, this.width / this.composedScaleFactor, this.height / this.composedScaleFactor, 'composed_bg')
-      .setOrigin(0, 0)
-      .setScale(this.composedScaleFactor)
-      .setDepth(2)
-      .setAlpha(0);
-
-    // Background Mode & Loop Tracking (7 loops 3-layers <-> 3 loops composed)
-    this.bgMode = 'layers';
-    this.bgDistanceScrolled = 0;
-    this.LAYER_LOOP_WIDTH = 2172; // Full width of layer3.png in texture coordinates
-    this.COMPOSED_LOOP_WIDTH = 3260; // Full width of composed.png in texture coordinates
-    this.TARGET_LAYER_LOOPS = 7;
-    this.TARGET_COMPOSED_LOOPS = 3;
-
     // Decorative lane track guides
     this.laneOverlay = this.add.graphics();
     this.laneOverlay.setDepth(3);
@@ -131,9 +114,6 @@ export default class GameScene extends Phaser.Scene {
     const texH = 724;
     this.scaleFactor = this.height / texH;
 
-    const compTexH = 362;
-    this.composedScaleFactor = this.height / compTexH;
-
     if (this.bgLayer1) {
       this.bgLayer1.setSize(this.width / this.scaleFactor, this.height / this.scaleFactor);
       this.bgLayer1.setScale(this.scaleFactor);
@@ -145,10 +125,6 @@ export default class GameScene extends Phaser.Scene {
     if (this.bgLayer3) {
       this.bgLayer3.setSize(this.width / this.scaleFactor, this.height / this.scaleFactor);
       this.bgLayer3.setScale(this.scaleFactor);
-    }
-    if (this.bgComposed) {
-      this.bgComposed.setSize(this.width / this.composedScaleFactor, this.height / this.composedScaleFactor);
-      this.bgComposed.setScale(this.composedScaleFactor);
     }
     this.drawLaneMarkers();
 
@@ -457,65 +433,11 @@ export default class GameScene extends Phaser.Scene {
 
     const dt = delta / 1000;
 
-    // 1. Dynamic Background Parallax & Loop Cycle
+    // 1. Continuous 3-layer parallax motion
     const deltaScroll = (this.scrollSpeed * dt) / this.scaleFactor;
-    const composedDeltaScroll = (this.scrollSpeed * dt) / this.composedScaleFactor;
-
-    if (this.bgMode === 'layers') {
-      // 3-layer parallax motion
-      this.bgLayer3.tilePositionX += deltaScroll;
-      this.bgLayer2.tilePositionX += deltaScroll * 0.12;
-      this.bgLayer1.tilePositionX += deltaScroll * 0.03;
-
-      this.bgDistanceScrolled += deltaScroll;
-
-      // When 7 full loops of layer3 complete, transition to composed.png for 3 loops
-      if (this.bgDistanceScrolled >= this.TARGET_LAYER_LOOPS * this.LAYER_LOOP_WIDTH) {
-        this.bgMode = 'composed';
-        this.bgDistanceScrolled = 0;
-        this.bgComposed.tilePositionX = 0;
-
-        this.tweens.add({
-          targets: [this.bgLayer1, this.bgLayer2, this.bgLayer3],
-          alpha: 0,
-          duration: 600,
-          ease: 'Sine.easeInOut'
-        });
-        this.tweens.add({
-          targets: this.bgComposed,
-          alpha: 1,
-          duration: 600,
-          ease: 'Sine.easeInOut'
-        });
-      }
-    } else if (this.bgMode === 'composed') {
-      // Single composed street scrolling
-      this.bgComposed.tilePositionX += composedDeltaScroll;
-
-      this.bgDistanceScrolled += composedDeltaScroll;
-
-      // When 3 full loops of composed.png complete, transition back to 3-layer parallax for 7 loops
-      if (this.bgDistanceScrolled >= this.TARGET_COMPOSED_LOOPS * this.COMPOSED_LOOP_WIDTH) {
-        this.bgMode = 'layers';
-        this.bgDistanceScrolled = 0;
-        this.bgLayer3.tilePositionX = 0;
-        this.bgLayer2.tilePositionX = 0;
-        this.bgLayer1.tilePositionX = 0;
-
-        this.tweens.add({
-          targets: [this.bgLayer1, this.bgLayer2, this.bgLayer3],
-          alpha: 1,
-          duration: 600,
-          ease: 'Sine.easeInOut'
-        });
-        this.tweens.add({
-          targets: this.bgComposed,
-          alpha: 0,
-          duration: 600,
-          ease: 'Sine.easeInOut'
-        });
-      }
-    }
+    this.bgLayer3.tilePositionX += deltaScroll;
+    this.bgLayer2.tilePositionX += deltaScroll * 0.12;
+    this.bgLayer1.tilePositionX += deltaScroll * 0.03;
 
     this.scrollSpeed = Math.min(
       SPEED_CONFIG.maxScrollSpeed,
