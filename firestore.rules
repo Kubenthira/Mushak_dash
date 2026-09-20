@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Leaderboard collection rules for Mushak Dash (Festival Runner)
+    match /leaderboard/{docId} {
+      
+      // 1. Allow public read access (anyone can view high scores & rankings)
+      allow read: if true;
+
+      // 2. Allow creating/updating scores only with strict anti-cheat & field validations
+      allow create, update: if
+        // Mandatory fields: must have score, timestamp, and playerId
+        request.resource.data.score is number &&
+        request.resource.data.score > 0 &&
+        request.resource.data.score <= 100000 &&
+        
+        // Player ID validation
+        (
+          (request.resource.data.playerId is string && request.resource.data.playerId.size() >= 1 && request.resource.data.playerId.size() <= 30) ||
+          (request.resource.data.playerName is string && request.resource.data.playerName.size() >= 1 && request.resource.data.playerName.size() <= 30)
+        ) &&
+        
+        // Timestamp must be present
+        (request.resource.data.timestamp is timestamp || request.resource.data.timestamp is number) &&
+        
+        // Anti-tampering: must only update if the new score is >= previous score
+        (resource == null || request.resource.data.score >= resource.data.score);
+
+      // 3. Prevent arbitrary deletion of high scores
+      allow delete: if false;
+    }
+  }
+}

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Mushak Dash | Vinayaka Chaturthi 2D Runner</title>
+    <meta name="description" content="Help Mushak collect modaks and festive offerings across vibrant streets in this 2D endless runner browser game for Vinayaka Chaturthi!" />
+    
+    <!-- Google Fonts for Festive Anime Arcade Aesthetics -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      window.onerror = function(msg, url, line, col, err) {
+        var el = document.getElementById('debug-error-box');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'debug-error-box';
+          el.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;background:#b71c1c;color:#fff;z-index:999999;padding:16px;border-radius:10px;font-family:monospace;font-size:15px;box-shadow:0 6px 25px rgba(0,0,0,0.9);line-height:1.5;';
+          document.body.appendChild(el);
+        }
+        el.innerHTML += '<div><b>⚠️ JAVASCRIPT ERROR:</b> ' + msg + '<br><small style="color:#ffcdd2;">' + url + ':' + line + '</small></div>';
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        var el = document.getElementById('debug-error-box');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'debug-error-box';
+          el.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;background:#b71c1c;color:#fff;z-index:999999;padding:16px;border-radius:10px;font-family:monospace;font-size:15px;box-shadow:0 6px 25px rgba(0,0,0,0.9);line-height:1.5;';
+          document.body.appendChild(el);
+        }
+        el.innerHTML += '<div><b>⚠️ PROMISE REJECTION:</b> ' + (e.reason && e.reason.message ? e.reason.message : e.reason) + '</div>';
+      });
+    </script>
+  </head>
+  <body>
+    <div id="app-container">
+      <div id="game-container"></div>
+      
+      <!-- Mobile Quick Touch Controls -->
+      <div id="touch-controls" class="touch-controls">
+        <div class="touch-col">
+          <button id="btn-up" class="touch-btn" aria-label="Switch Lane Up">▲</button>
+          <button id="btn-down" class="touch-btn" aria-label="Switch Lane Down">▼</button>
+        </div>
+        <button id="btn-jump" class="touch-btn jump-btn" aria-label="Jump">⚡ JUMP</button>
+      </div>
+
+      <!-- Player Profile Setup Modal (First launch & Profile editing) -->
+      <div id="profile-modal" class="modal-backdrop">
+        <div class="modal-card">
+          <div class="modal-header">
+            <span class="modal-badge">✨ FESTIVAL RUNNER ENTRY ✨</span>
+            <h2 class="modal-title">REGISTER MUSHAK RUNNER</h2>
+            <p class="modal-subtitle">Set your unique Player ID for the live leaderboard</p>
+            <button type="button" id="btn-close-modal" class="modal-close-btn" aria-label="Close">✕</button>
+          </div>
+          <form id="profile-form">
+            <div class="form-group">
+              <label for="input-player-name">Player ID / Name</label>
+              <input type="text" id="input-player-name" maxlength="25" placeholder="e.g. MushakRider" autocomplete="off" />
+            </div>
+            <div class="modal-actions">
+              <button type="submit" id="btn-save-profile" class="modal-btn-primary">SAVE & CONTINUE</button>
+              <button type="button" id="btn-cancel-modal" class="modal-btn-secondary">SKIP / PLAY AS GUEST</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
