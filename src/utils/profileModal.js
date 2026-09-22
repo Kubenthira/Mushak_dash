@@ -1,62 +1,169 @@
-// UI Helper for Player ID Registration Modal
-import { getPlayerProfile, savePlayerProfile } from '../services/leaderboardService';
+// UI Helper for Player ID & Campus Registration Modal
+// Enforces unique Player ID check against Firestore and campus detail storage.
 
-export function setupProfileModal(onSaveCallback) {
+import {
+  getPlayerProfile,
+  checkAndRegisterPlayer,
+  validatePlayerId
+} from '../services/leaderboardService';
+import { sounds } from './audio';
+
+const ID_PREFIXES = ['Mushak', 'GaneshRider', 'ModakRunner', 'PrasadDash', 'Vakratunda', 'Vinayaka', 'BappaRider', 'SpeedyMouse'];
+
+function generateRandomId() {
+  const prefix = ID_PREFIXES[Math.floor(Math.random() * ID_PREFIXES.length)];
+  const num = Math.floor(100 + Math.random() * 900);
+  return `${prefix}_${num}`;
+}
+
+export function setupProfileModal(onSaveCallback, isMandatory = false) {
   const modal = document.getElementById('profile-modal');
   const form = document.getElementById('profile-form');
-  const nameInput = document.getElementById('input-player-name');
+  const idInput = document.getElementById('input-player-name');
+  const campusInput = document.getElementById('input-player-campus');
   const closeBtn = document.getElementById('btn-close-modal');
-  const cancelBtn = document.getElementById('btn-cancel-modal');
+  const randomBtn = document.getElementById('btn-random-id');
+  const feedbackEl = document.getElementById('profile-feedback');
+  const submitBtn = document.getElementById('btn-save-profile');
+  const submitText = document.getElementById('btn-save-text');
+  const titleText = document.getElementById('modal-title-text');
 
-  if (!modal || !form || !nameInput) return;
+  if (!modal || !form || !idInput) return;
 
-  // Close and Cancel buttons
-  if (closeBtn) {
-    closeBtn.onclick = () => hideProfileModal();
+  const current = getPlayerProfile();
+  if (idInput && !idInput.value) {
+    idInput.value = current.playerId || '';
   }
-  if (cancelBtn) {
-    cancelBtn.onclick = () => {
-      const current = getPlayerProfile();
-      if (!current.playerId) {
-        savePlayerProfile('MushakRunner');
-      }
-      hideProfileModal();
-      if (typeof onSaveCallback === 'function') {
-        onSaveCallback(getPlayerProfile());
-      }
+  if (campusInput && !campusInput.value) {
+    campusInput.value = current.campus !== 'Main Campus' ? current.campus : '';
+  }
+
+  // Update title based on whether player is editing or first-time registering
+  if (titleText) {
+    titleText.textContent = current.isRegistered ? 'EDIT RUNNER PROFILE' : 'REGISTER UNIQUE RUNNER';
+  }
+
+  // Close button handling
+  if (closeBtn) {
+    // If mandatory (e.g. before starting game for first-time runners) and no ID registered, hide or alert
+    if (isMandatory && !current.isRegistered) {
+      closeBtn.style.display = 'none';
+    } else {
+      closeBtn.style.display = 'flex';
+      closeBtn.onclick = () => {
+        sounds.playClick();
+        hideProfileModal();
+      };
+    }
+  }
+
+  // Suggest ID Button
+  if (randomBtn) {
+    randomBtn.onclick = (e) => {
+      e.preventDefault();
+      sounds.playClick();
+      idInput.value = generateRandomId();
+      idInput.focus();
+      clearFeedback();
     };
   }
 
-  // Handle form submission
-  form.onsubmit = (e) => {
-    e.preventDefault();
-    const playerId = nameInput.value.trim() || 'MushakRunner';
+  function showFeedback(message, type = 'error') {
+    if (!feedbackEl) return;
+    feedbackEl.textContent = message;
+    feedbackEl.className = `profile-feedback show ${type}`;
+  }
 
-    savePlayerProfile(playerId);
-    hideProfileModal();
-    if (typeof onSaveCallback === 'function') {
-      onSaveCallback({ playerId, name: playerId });
+  function clearFeedback() {
+    if (!feedbackEl) return;
+    feedbackEl.textContent = '';
+    feedbackEl.className = 'profile-feedback hidden';
+  }
+
+  idInput.oninput = () => clearFeedback();
+
+  // Handle Form Submission
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const rawId = idInput.value.trim();
+    const rawCampus = campusInput ? campusInput.value.trim() : '';
+
+    const validation = validatePlayerId(rawId);
+    if (!validation.valid) {
+      showFeedback(`⚠️ ${validation.message}`, 'error');
+      sounds.playHit();
+      idInput.focus();
+      return;
+    }
+
+    // Set loading state
+    submitBtn.disabled = true;
+    if (submitText) submitText.textContent = 'VERIFYING ID...';
+    showFeedback('⏳ Checking ID uniqueness in Temple Leaderboard...', 'info');
+
+    try {
+      const res = await checkAndRegisterPlayer(rawId, rawCampus);
+
+      if (!res.success) {
+        // Player ID is taken or invalid
+        sounds.playHit();
+        showFeedback(`❌ ${res.message}`, 'error');
+        submitBtn.disabled = false;
+        if (submitText) submitText.textContent = 'TRY ANOTHER ID';
+        idInput.focus();
+        return;
+      }
+
+      // Success! ID is either new & registered or returning player
+      sounds.playBlessing();
+      showFeedback(`✅ ${res.message}`, 'success');
+
+      setTimeout(() => {
+        hideProfileModal();
+        submitBtn.disabled = false;
+        if (submitText) submitText.textContent = 'CONFIRM & ENTER FESTIVAL';
+        if (typeof onSaveCallback === 'function') {
+          onSaveCallback(getPlayerProfile());
+        }
+      }, 650);
+
+    } catch (err) {
+      console.error('[ProfileModal] Error:', err);
+      sounds.playBlessing();
+      hideProfileModal();
+      submitBtn.disabled = false;
+      if (submitText) submitText.textContent = 'CONFIRM & ENTER FESTIVAL';
+      if (typeof onSaveCallback === 'function') {
+        onSaveCallback(getPlayerProfile());
+      }
     }
   };
 }
 
-export function showProfileModal(onSaveCallback) {
+export function showProfileModal(onSaveCallback, isMandatory = false) {
   const modal = document.getElementById('profile-modal');
-  const nameInput = document.getElementById('input-player-name');
+  const idInput = document.getElementById('input-player-name');
+  const campusInput = document.getElementById('input-player-campus');
+  const feedbackEl = document.getElementById('profile-feedback');
 
   if (!modal) return;
 
   const current = getPlayerProfile();
-  if (nameInput) nameInput.value = current.playerId || '';
+  if (idInput) idInput.value = current.playerId || '';
+  if (campusInput) campusInput.value = current.campus !== 'Main Campus' ? current.campus : '';
+  if (feedbackEl) {
+    feedbackEl.textContent = '';
+    feedbackEl.className = 'profile-feedback hidden';
+  }
 
-  setupProfileModal(onSaveCallback);
+  setupProfileModal(onSaveCallback, isMandatory);
   modal.classList.add('active');
 
   setTimeout(() => {
-    if (nameInput && !nameInput.value) {
-      nameInput.focus();
+    if (idInput && !idInput.value) {
+      idInput.focus();
     }
-  }, 100);
+  }, 120);
 }
 
 export function hideProfileModal() {

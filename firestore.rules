@@ -8,18 +8,24 @@ service cloud.firestore {
       // 1. Allow public read access (anyone can view high scores & rankings)
       allow read: if true;
 
-      // 2. Allow creating/updating scores only with strict anti-cheat & field validations
+      // 2. Allow creating/updating scores, campus, and player details
       allow create, update: if
-        // Mandatory fields: must have score, timestamp, and playerId
+        // Score validation (allow 0 for initial registration up to 100,000)
         request.resource.data.score is number &&
-        request.resource.data.score > 0 &&
+        request.resource.data.score >= 0 &&
         request.resource.data.score <= 100000 &&
         
-        // Player ID validation
+        // Player ID validation (2 to 30 characters)
         (
-          (request.resource.data.playerId is string && request.resource.data.playerId.size() >= 1 && request.resource.data.playerId.size() <= 30) ||
-          (request.resource.data.playerName is string && request.resource.data.playerName.size() >= 1 && request.resource.data.playerName.size() <= 30)
+          (request.resource.data.playerId is string && request.resource.data.playerId.size() >= 2 && request.resource.data.playerId.size() <= 30) ||
+          (request.resource.data.playerName is string && request.resource.data.playerName.size() >= 2 && request.resource.data.playerName.size() <= 30)
         ) &&
+
+        // Optional Campus Name validation (up to 50 characters)
+        (!('campus' in request.resource.data) || (request.resource.data.campus is string && request.resource.data.campus.size() <= 50)) &&
+
+        // Optional Device Owner Token for uniqueness ownership check
+        (!('ownerToken' in request.resource.data) || request.resource.data.ownerToken is string) &&
         
         // Timestamp must be present
         (request.resource.data.timestamp is timestamp || request.resource.data.timestamp is number) &&

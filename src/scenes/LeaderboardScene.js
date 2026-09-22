@@ -161,7 +161,7 @@ export default class LeaderboardScene extends Phaser.Scene {
       fontFamily: 'Outfit, sans-serif', fontSize: this.isMobile ? '11px' : '13px', fontStyle: 'bold', color: '#B0BEC5'
     }).setOrigin(0, 0.5);
 
-    const hPlayer = this.add.text(playerX, startY + 13, 'PLAYER ID', {
+    const hPlayer = this.add.text(playerX, startY + 13, 'PLAYER & CAMPUS', {
       fontFamily: 'Outfit, sans-serif', fontSize: this.isMobile ? '11px' : '13px', fontStyle: 'bold', color: '#B0BEC5'
     }).setOrigin(0, 0.5);
 
@@ -172,7 +172,7 @@ export default class LeaderboardScene extends Phaser.Scene {
     this.scoreContainer.add([hRank, hPlayer, hScore]);
 
     // Rows calculation
-    const bottomNavSpace = this.isMobile ? 70 : 80;
+    const bottomNavSpace = this.isMobile ? 65 : 75;
     const maxVisibleRows = Math.floor((this.height - startY - bottomNavSpace) / rowHeight);
     const visibleScores = this.scores.slice(0, Math.max(4, maxVisibleRows));
 
@@ -206,40 +206,60 @@ export default class LeaderboardScene extends Phaser.Scene {
 
       const rText = this.add.text(rankX, y + (rowHeight - 5) / 2, rankText, {
         fontFamily: 'Fredoka, Outfit, sans-serif',
-        fontSize: this.isMobile ? '13px' : '16px',
+        fontSize: this.isMobile ? '13px' : '15px',
         fontStyle: 'bold',
         color: rankColor
       }).setOrigin(0, 0.5);
 
-      // Player ID (Truncated cleanly on mobile)
-      let nameStr = entry.playerId;
-      const maxNameLen = this.isMobile ? 12 : 22;
+      // Player ID + Campus Name formatting
+      let nameStr = entry.playerId || 'Runner';
+      const maxNameLen = this.isMobile ? 10 : 16;
       if (nameStr.length > maxNameLen) {
         nameStr = nameStr.slice(0, maxNameLen - 1) + '…';
       }
       if (entry.isCurrentPlayer) nameStr += ' ⭐';
 
+      let campusStr = entry.campus || 'Main Campus';
+      const maxCampusLen = this.isMobile ? 12 : 20;
+      if (campusStr.length > maxCampusLen) {
+        campusStr = campusStr.slice(0, maxCampusLen - 1) + '…';
+      }
+
+      // Name Text
       const nameText = this.add.text(
         playerX,
         y + (rowHeight - 5) / 2,
         nameStr,
         {
           fontFamily: 'Fredoka, Outfit, sans-serif',
-          fontSize: this.isMobile ? '14px' : '16px',
+          fontSize: this.isMobile ? '13px' : '15px',
           fontStyle: 'bold',
           color: entry.isCurrentPlayer ? '#FFD700' : '#FFFFFF'
+        }
+      ).setOrigin(0, 0.5);
+
+      // Campus badge next to name
+      const campusOffset = nameText.width + (this.isMobile ? 6 : 12);
+      const campusText = this.add.text(
+        playerX + campusOffset,
+        y + (rowHeight - 5) / 2,
+        `🏫 ${campusStr}`,
+        {
+          fontFamily: 'Outfit, sans-serif',
+          fontSize: this.isMobile ? '10px' : '12px',
+          color: '#80DEEA'
         }
       ).setOrigin(0, 0.5);
 
       // Score
       const scoreText = this.add.text(scoreX, y + (rowHeight - 5) / 2, `${entry.score}`, {
         fontFamily: 'Fredoka, sans-serif',
-        fontSize: this.isMobile ? '15px' : '18px',
+        fontSize: this.isMobile ? '14px' : '17px',
         fontStyle: 'bold',
         color: '#FFD700'
       }).setOrigin(1, 0.5);
 
-      rowContainer.add([rText, nameText, scoreText]);
+      rowContainer.add([rText, nameText, campusText, scoreText]);
       this.scoreContainer.add(rowContainer);
     });
   }

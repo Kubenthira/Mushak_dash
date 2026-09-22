@@ -68,10 +68,23 @@
       <!-- Fullscreen Toggle Button -->
       <button id="btn-fullscreen" aria-label="Toggle Fullscreen" title="Toggle Fullscreen">⛶</button>
 
-      <!-- Mobile Portrait Orientation Suggestion Pill -->
-      <div id="rotate-hint">
-        <span>🔄 Rotate for wide screen</span>
-        <button id="btn-dismiss-rotate" aria-label="Dismiss">✕</button>
+      <!-- Full-Screen Mobile Landscape Orientation Prompt Overlay -->
+      <div id="orientation-overlay" class="orientation-overlay" aria-live="polite">
+        <div class="orientation-content">
+          <div class="phone-rotate-anim">
+            <div class="phone-body">
+              <div class="phone-screen">
+                <span class="phone-sparkle">✨</span>
+              </div>
+            </div>
+            <div class="rotate-arrow-curve">↻</div>
+          </div>
+          <h2 class="orientation-title">PLEASE ROTATE TO LANDSCAPE</h2>
+          <p class="orientation-desc">
+            Mushak Dash is an authentic arcade festival runner built for wide streets! Please rotate your device sideways to start running.
+          </p>
+          <button id="btn-force-fullscreen" class="orientation-btn">⛶ ENTER FULLSCREEN</button>
+        </div>
       </div>
 
       <!-- Mobile Quick Touch Controls (Shown during gameplay) -->
@@ -83,23 +96,55 @@
         <button id="btn-jump" class="touch-btn jump-btn" aria-label="Jump Obstacle">⚡ JUMP</button>
       </div>
 
-      <!-- Player Profile Setup Modal (First launch & Profile editing) -->
+      <!-- Player Profile Setup Modal (First launch, Unique ID & Campus Setup) -->
       <div id="profile-modal" class="modal-backdrop">
         <div class="modal-card">
           <div class="modal-header">
             <span class="modal-badge">✨ FESTIVAL RUNNER ENTRY ✨</span>
-            <h2 class="modal-title">REGISTER MUSHAK RUNNER</h2>
-            <p class="modal-subtitle">Set your unique Player ID for the live leaderboard</p>
+            <h2 class="modal-title" id="modal-title-text">REGISTER RUNNER</h2>
+            <p class="modal-subtitle">Choose a unique Player ID and Campus for the live leaderboard</p>
             <button type="button" id="btn-close-modal" class="modal-close-btn" aria-label="Close">✕</button>
           </div>
+          
           <form id="profile-form">
+            <!-- Unique Player ID Field -->
             <div class="form-group">
-              <label for="input-player-name">Player ID / Name</label>
-              <input type="text" id="input-player-name" maxlength="25" placeholder="e.g. MushakRider" autocomplete="off" />
+              <div class="label-row">
+                <label for="input-player-name">Unique Player ID <span class="required-star">*</span></label>
+                <button type="button" id="btn-random-id" class="btn-ghost-sm" title="Generate a random unique ID">🎲 Suggest ID</button>
+              </div>
+              <input 
+                type="text" 
+                id="input-player-name" 
+                maxlength="20" 
+                placeholder="e.g. MushakRider_99" 
+                autocomplete="off" 
+                spellcheck="false"
+                required 
+              />
+              <span class="field-hint">3–20 characters. Letters, numbers, underscores. Unique per player.</span>
             </div>
+
+            <!-- Campus Name Field -->
+            <div class="form-group">
+              <label for="input-player-campus">Campus Name / College</label>
+              <input 
+                type="text" 
+                id="input-player-campus" 
+                maxlength="40" 
+                placeholder="e.g. IIT Bombay / Main Campus" 
+                autocomplete="off" 
+              />
+              <span class="field-hint">Will appear next to your name on the live leaderboard.</span>
+            </div>
+
+            <!-- Inline Verification Feedback Status -->
+            <div id="profile-feedback" class="profile-feedback hidden"></div>
+
             <div class="modal-actions">
-              <button type="submit" id="btn-save-profile" class="modal-btn-primary">SAVE & CONTINUE</button>
-              <button type="button" id="btn-cancel-modal" class="modal-btn-secondary">SKIP / PLAY AS GUEST</button>
+              <button type="submit" id="btn-save-profile" class="modal-btn-primary">
+                <span id="btn-save-text">CONFIRM & ENTER FESTIVAL</span>
+              </button>
             </div>
           </form>
         </div>
@@ -110,40 +155,44 @@
     <script>
       // Fullscreen handling
       var fsBtn = document.getElementById('btn-fullscreen');
-      if (fsBtn) {
-        fsBtn.addEventListener('click', function() {
-          if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(function() {});
-            fsBtn.textContent = '🗗';
-          } else {
-            if (document.exitFullscreen) {
-              document.exitFullscreen().catch(function() {});
-              fsBtn.textContent = '⛶';
-            }
-          }
-        });
-      }
+      var forceFsBtn = document.getElementById('btn-force-fullscreen');
 
-      // Rotate hint handling
-      var rotateHint = document.getElementById('rotate-hint');
-      var dismissRotate = document.getElementById('btn-dismiss-rotate');
-      var isMobileDevice = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 800);
-      
-      function checkOrientation() {
-        if (!rotateHint) return;
-        if (isMobileDevice && window.innerHeight > window.innerWidth && !sessionStorage.getItem('dismiss_rotate')) {
-          rotateHint.classList.add('show');
+      function toggleFs() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(function() {});
+          if (fsBtn) fsBtn.textContent = '🗗';
         } else {
-          rotateHint.classList.remove('show');
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(function() {});
+            if (fsBtn) fsBtn.textContent = '⛶';
+          }
         }
       }
 
-      if (dismissRotate) {
-        dismissRotate.addEventListener('click', function(e) {
-          e.stopPropagation();
-          sessionStorage.setItem('dismiss_rotate', 'true');
-          if (rotateHint) rotateHint.classList.remove('show');
-        });
+      if (fsBtn) fsBtn.addEventListener('click', toggleFs);
+      if (forceFsBtn) forceFsBtn.addEventListener('click', function() {
+        toggleFs();
+        try {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(function() {});
+          }
+        } catch(e) {}
+      });
+
+      // Mobile Portrait Orientation Blocker handling
+      var orientationOverlay = document.getElementById('orientation-overlay');
+      var isMobileDevice = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || 
+                           ('ontouchstart' in window && Math.min(window.innerWidth, window.innerHeight) <= 820);
+
+      function checkOrientation() {
+        if (!orientationOverlay) return;
+        var isPortrait = window.innerHeight > window.innerWidth;
+        // Show orientation blocker if on mobile/touch device and currently held vertically in portrait
+        if (isMobileDevice && isPortrait) {
+          orientationOverlay.classList.add('active');
+        } else {
+          orientationOverlay.classList.remove('active');
+        }
       }
 
       window.addEventListener('resize', checkOrientation);

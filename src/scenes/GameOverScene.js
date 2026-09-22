@@ -201,19 +201,28 @@ export default class GameOverScene extends Phaser.Scene {
       }).setOrigin(0.5);
     }
 
-    // 5. Leaderboard Status Banner
-    const lbStatusY = cardY + cardHeight - 24;
+    // 5. Leaderboard Status Banner & Player Identity
+    const profile = getPlayerProfile();
+    const playerId = profile.playerId || 'MushakRunner';
+    const playerCampus = profile.campus || 'Main Campus';
+
+    const playerTagY = cardY + cardHeight - 38;
+    this.add.text(centerX, playerTagY, `👤 ${playerId}  •  🏫 ${playerCampus}`, {
+      fontFamily: 'Fredoka, sans-serif',
+      fontSize: isMobile ? '12px' : '14px',
+      color: '#81C784',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    const lbStatusY = cardY + cardHeight - 16;
     const lbStatus = this.add.text(centerX, lbStatusY, '⏳ Submitting score...', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '12px',
       color: '#FFE082'
     }).setOrigin(0.5);
 
-    // Asynchronously submit score
-    const profile = getPlayerProfile();
-    const playerId = profile.playerId || 'MushakRunner';
-
-    submitScore(playerId, this.finalScore, { modaks: this.modaks })
+    // Asynchronously submit score with campus metadata
+    submitScore(playerId, this.finalScore, { modaks: this.modaks, campus: playerCampus })
       .then((res) => {
         if (res.success) {
           lbStatus.setText(res.message);
@@ -223,7 +232,8 @@ export default class GameOverScene extends Phaser.Scene {
           lbStatus.setColor('#FFAB91');
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.warn('[GameOver] Score submit catch:', err);
         lbStatus.setText('Score recorded locally');
         lbStatus.setColor('#B0BEC5');
       });

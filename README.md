@@ -84,6 +84,8 @@ The game is pre-architected to seamlessly accept multi-frame sprite sheets for M
 
 ---
 
+---
+
 ## 🚀 Running Locally & Deploying to Vercel
 
 ### Run Locally:
@@ -94,11 +96,85 @@ npm install
 # 2. Start Vite development server
 npm run dev
 ```
-Open `http://localhost:3000` in your browser.
+Open `http://localhost:5173` in your browser.
 
-### Build for Production / Vercel:
-```bash
-npm run build
+---
+
+## ☁️ Vercel Deployment & Database Credentials Guide
+
+To connect your live online Firebase Firestore database with your Vercel deployment:
+
+### Step 1: Where to find your Firebase Credentials
+1. Go to the [Firebase Console](https://console.firebase.google.com/).
+2. Select your project (e.g. `leaderboard7`).
+3. Click the **Project Settings** (gear icon ⚙️ in the top-left sidebar) -> **General** tab.
+4. Scroll down to the **Your apps** section and select your **Web app** (`</>`).
+5. Under **SDK setup and configuration**, select **Config**. You will see your keys:
+   ```javascript
+   const firebaseConfig = {
+     apiKey: "AIzaSy...",
+     authDomain: "your-project.firebaseapp.com",
+     projectId: "your-project",
+     storageBucket: "your-project.firebasestorage.app",
+     messagingSenderId: "1234567890",
+     appId: "1:1234567890:web:abcdef...",
+     measurementId: "G-ABCDEF..."
+   };
+   ```
+
+### Step 2: Add Environment Variables in Vercel
+In Vite, all client-exposed environment variables **must start with `VITE_`**.
+
+1. Go to your **Vercel Dashboard** -> Open your deployed project.
+2. Go to **Settings** -> **Environment Variables**.
+3. Add the following **7 Environment Variables** (copying values from your Firebase config):
+
+| Key | Value Description | Example Value |
+| :--- | :--- | :--- |
+| `VITE_FIREBASE_API_KEY` | Your Firebase Web API Key | `AIzaSyAx9lBbI1jFcaCb1y6_kOmT-tttrZiKGY8` |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Auth Domain | `leaderboard7.firebaseapp.com` |
+| `VITE_FIREBASE_PROJECT_ID` | Project ID | `leaderboard7` |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Storage Bucket | `leaderboard7.firebasestorage.app` |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID`| Sender ID | `819545184172` |
+| `VITE_FIREBASE_APP_ID` | Web App ID | `1:819545184172:web:66f0d97f236a9054480c09` |
+| `VITE_FIREBASE_MEASUREMENT_ID` | Google Analytics Measurement ID | `G-5JVWS4XBZE` |
+
+4. After adding the variables, trigger a **Redeploy** on Vercel so the build includes them!
+
+### Step 3: Ensure Firestore Rules are Active
+In the Firebase Console -> **Firestore Database** -> **Rules** tab, ensure you paste the rules from `firestore.rules`:
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /leaderboard/{docId} {
+      allow read: if true;
+      allow create, update: if
+        request.resource.data.score is number &&
+        request.resource.data.score >= 0 &&
+        request.resource.data.score <= 100000 &&
+        (
+          (request.resource.data.playerId is string && request.resource.data.playerId.size() >= 2 && request.resource.data.playerId.size() <= 30) ||
+          (request.resource.data.playerName is string && request.resource.data.playerName.size() >= 2 && request.resource.data.playerName.size() <= 30)
+        ) &&
+        (!('campus' in request.resource.data) || (request.resource.data.campus is string && request.resource.data.campus.size() <= 50)) &&
+        (!('ownerToken' in request.resource.data) || request.resource.data.ownerToken is string) &&
+        (request.resource.data.timestamp is timestamp || request.resource.data.timestamp is number) &&
+        (resource == null || request.resource.data.score >= resource.data.score);
+      allow delete: if false;
+    }
+  }
+}
 ```
-- The output will be in the `dist/` directory.
-- **Deploy to Vercel**: Connect your GitHub repository to Vercel or run `npx vercel`. The default Vite preset will automatically detect the build settings (`dist`).
+Click **Publish**.
+
+---
+
+## 📱 Mobile Landscape Orientation & Responsiveness
+
+- **Orientation Lock**: When loaded on a mobile phone or tablet in portrait mode, a full-screen festive orientation blocker appears prompting the player: **"PLEASE ROTATE TO LANDSCAPE"** with an animated device graphic.
+- **Landscape Gameplay**: As soon as the device is turned sideways into landscape mode, the blocker disappears and the game smoothly adapts:
+  - **Left Thumb Controls**: Ergonomic Track Up (`▲`) and Track Down (`▼`) buttons spaced with safe-area insets.
+  - **Right Thumb Controls**: Glowing `⚡ JUMP` button.
+  - **Touch Gestures**: Fullscreen swipe up/down to switch tracks, swipe right or tap right half of screen to jump!
+- **Unique Player ID & Campus**: Every player registers a unique handle and campus before starting a run, which is dynamically displayed across rankings on the live Temple Leaderboard!

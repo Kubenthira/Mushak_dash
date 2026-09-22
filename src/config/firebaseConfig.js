@@ -9,13 +9,13 @@ import { getFirestore } from 'firebase/firestore';
  * Project Settings -> General -> Your apps -> Web app -> Config
  */
 export const firebaseConfig = {
-  apiKey: "AIzaSyAx9lBbI1jFcaCb1y6_kOmT-tttrZiKGY8",
-  authDomain: "leaderboard7.firebaseapp.com",
-  projectId: "leaderboard7",
-  storageBucket: "leaderboard7.firebasestorage.app",
-  messagingSenderId: "819545184172",
-  appId: "1:819545184172:web:66f0d97f236a9054480c09",
-  measurementId: "G-5JVWS4XBZE"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAx9lBbI1jFcaCb1y6_kOmT-tttrZiKGY8",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "leaderboard7.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "leaderboard7",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "leaderboard7.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "819545184172",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:819545184172:web:66f0d97f236a9054480c09",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-5JVWS4XBZE"
 };
 
 /**

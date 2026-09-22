@@ -95,7 +95,7 @@ export default class MenuScene extends Phaser.Scene {
 
     const displayName = profile.playerId
       ? (profile.playerId.length > 10 ? profile.playerId.slice(0, 9) + '…' : profile.playerId)
-      : 'Set ID';
+      : 'Register ID';
 
     const profileTag = this.add.text(
       profileX,
@@ -104,7 +104,7 @@ export default class MenuScene extends Phaser.Scene {
       {
         fontFamily: 'Fredoka, Outfit, sans-serif',
         fontSize: isMobile ? '13px' : '15px',
-        color: '#81C784',
+        color: profile.playerId ? '#81C784' : '#FFD700',
         fontStyle: 'bold'
       }
     ).setOrigin(1, 0.5).setDepth(11).setInteractive({ useHandCursor: true });
@@ -120,6 +120,15 @@ export default class MenuScene extends Phaser.Scene {
       this.createMobileLayout(width, height);
     } else {
       this.createDesktopLayout(width, height);
+    }
+
+    // Automatically prompt player for unique ID & campus before starting the game
+    if (!profile.isRegistered || !profile.playerId) {
+      this.time.delayedCall(350, () => {
+        showProfileModal(() => {
+          this.scene.restart();
+        }, true);
+      });
     }
 
     this.scale.on('resize', this.onResize, this);
@@ -364,6 +373,22 @@ export default class MenuScene extends Phaser.Scene {
   startGame() {
     sounds.init();
     sounds.playClick();
+
+    const profile = getPlayerProfile();
+    if (!profile.isRegistered || !profile.playerId) {
+      // Mandatory registration before first run
+      showProfileModal((newProfile) => {
+        if (newProfile && newProfile.playerId) {
+          this.launchRun();
+        }
+      }, true);
+      return;
+    }
+
+    this.launchRun();
+  }
+
+  launchRun() {
     this.cameras.main.fade(280, 26, 11, 46, false, (camera, progress) => {
       if (progress === 1) {
         this.scene.start('GameScene');
