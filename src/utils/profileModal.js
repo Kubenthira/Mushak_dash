@@ -35,7 +35,7 @@ export function setupProfileModal(onSaveCallback, isMandatory = false) {
     idInput.value = current.playerId || '';
   }
   if (campusInput && !campusInput.value) {
-    campusInput.value = current.campus !== 'Main Campus' ? current.campus : '';
+    campusInput.value = current.campus || '';
   }
 
   // Update title based on whether player is editing or first-time registering
@@ -169,7 +169,7 @@ export function showProfileModal(onSaveCallback, isMandatory = false) {
 
   const current = getPlayerProfile();
   if (idInput) idInput.value = current.playerId || '';
-  if (campusInput) campusInput.value = current.campus !== 'Main Campus' ? current.campus : '';
+  if (campusInput) campusInput.value = current.campus || '';
   if (feedbackEl) {
     feedbackEl.textContent = '';
     feedbackEl.className = 'profile-feedback hidden';

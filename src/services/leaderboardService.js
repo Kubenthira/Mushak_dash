@@ -49,7 +49,7 @@ export function getPlayerProfile() {
   return {
     playerId,
     name: playerId,
-    campus: campus || 'Main Campus',
+    campus: campus || '',
     token,
     isRegistered,
     isComplete: isRegistered
@@ -67,15 +67,14 @@ export function savePlayerProfile(playerId, campus = '') {
     localStorage.setItem(PROFILE_STORAGE_KEYS.PLAYER_ID, cleanId);
     localStorage.setItem(PROFILE_STORAGE_KEYS.IS_REGISTERED, 'true');
   }
-  if (cleanCampus) {
-    localStorage.setItem(PROFILE_STORAGE_KEYS.PLAYER_CAMPUS, cleanCampus);
-  }
+  // Store or clear campus
+  localStorage.setItem(PROFILE_STORAGE_KEYS.PLAYER_CAMPUS, cleanCampus);
   getOrCreatePlayerToken();
 
   return {
     playerId: cleanId,
     name: cleanId,
-    campus: cleanCampus || 'Main Campus',
+    campus: cleanCampus,
     isRegistered: Boolean(cleanId)
   };
 }
@@ -125,7 +124,7 @@ export async function checkAndRegisterPlayer(playerId, campus = '') {
   }
 
   const cleanId = validation.cleanId;
-  const cleanCampus = (campus || '').trim().slice(0, 50) || 'Main Campus';
+  const cleanCampus = (campus || '').trim().slice(0, 50);
   const token = getOrCreatePlayerToken();
 
   // Save profile locally immediately
@@ -210,7 +209,7 @@ export async function checkAndRegisterPlayer(playerId, campus = '') {
 export async function submitScore(playerId, score, meta = {}) {
   const profile = getPlayerProfile();
   const cleanId = (playerId || profile.playerId || '').trim();
-  const cleanCampus = (meta.campus || profile.campus || 'Main Campus').trim().slice(0, 50);
+  const cleanCampus = (meta.campus !== undefined ? meta.campus : (profile.campus || '')).trim().slice(0, 50);
   const numericScore = Math.max(0, Math.floor(Number(score) || 0));
   const token = getOrCreatePlayerToken();
 
@@ -345,7 +344,7 @@ export async function getTopScores(limitCount = 20) {
         rank: 1,
         id: 'local_user',
         playerId: profile.playerId,
-        campus: profile.campus || 'Main Campus',
+        campus: profile.campus || '',
         score: localBest,
         isCurrentPlayer: true,
         timestamp: Date.now()
@@ -376,7 +375,7 @@ export async function getTopScores(limitCount = 20) {
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
       const pId = data.playerId || data.playerName || 'Runner';
-      const campus = data.campus || data.campusName || 'Main Campus';
+      const campus = data.campus || data.campusName || '';
       const isCurrentPlayer = (
         Boolean(profile.playerId) &&
         pId.toLowerCase() === profile.playerId.toLowerCase()
@@ -410,7 +409,7 @@ export async function getTopScores(limitCount = 20) {
         rank: 1,
         id: 'local_user',
         playerId: profile.playerId,
-        campus: profile.campus || 'Main Campus',
+        campus: profile.campus || '',
         score: localBest,
         isCurrentPlayer: true,
         timestamp: Date.now()

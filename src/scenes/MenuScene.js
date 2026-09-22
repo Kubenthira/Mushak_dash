@@ -15,7 +15,9 @@ export default class MenuScene extends Phaser.Scene {
 
     const width = this.scale.width;
     const height = this.scale.height;
-    const isMobile = width < 768 || width < height;
+    const isPhoneLandscape = width > height && height <= 520;
+    const isPortrait = height >= width;
+    const isMobile = isPhoneLandscape || isPortrait || width < 768;
 
     // 1. 3-Layer Parallax Street Background
     const texH = 724;
@@ -60,9 +62,9 @@ export default class MenuScene extends Phaser.Scene {
     const modakCount = parseInt(localStorage.getItem(STORAGE_KEYS.MODAK_COUNT) || '0', 10);
     const profile = getPlayerProfile();
 
-    const pillWidth = Math.min(width * 0.92, 480);
-    const pillHeight = isMobile ? 42 : 48;
-    const pillY = isMobile ? 20 : 28;
+    const pillWidth = Math.min(width * 0.92, isPhoneLandscape ? 430 : 480);
+    const pillHeight = isPhoneLandscape ? 36 : (isMobile ? 42 : 48);
+    const pillY = isPhoneLandscape ? 10 : (isMobile ? 20 : 28);
 
     const scoreCard = this.add.graphics();
     scoreCard.fillStyle(0x0f0c20, 0.88);
@@ -233,66 +235,67 @@ export default class MenuScene extends Phaser.Scene {
     const isPortrait = height >= width;
     const centerX = width / 2;
 
-    // Title Section
-    const titleY = isPortrait ? height * 0.19 : height * 0.22;
-    const titleContainer = this.add.container(centerX, titleY).setDepth(10);
-
-    const subTitle = this.add.text(0, -26, '✨ VINAYAKA CHATURTHI FESTIVAL RUNNER ✨', {
-      fontFamily: 'Outfit, sans-serif',
-      fontSize: Math.min(width * 0.034, 13) + 'px',
-      letterSpacing: 1.5,
-      color: '#FFE082',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    const titleFontSize = Math.min(width * 0.11, 46);
-    const titleText = this.add.text(0, 14, 'MUSHAK DASH', {
-      fontFamily: 'Fredoka, Outfit, sans-serif',
-      fontSize: `${titleFontSize}px`,
-      fontStyle: 'bold',
-      color: '#FFF8E1',
-      stroke: '#E65100',
-      strokeThickness: 6,
-      shadow: { offsetX: 0, offsetY: 4, color: '#000000', blur: 8, stroke: true, fill: true }
-    }).setOrigin(0.5);
-
-    titleContainer.add([subTitle, titleText]);
-
-    // Hero Character in Middle
-    const charY = isPortrait ? height * 0.42 : height * 0.50;
-    const charScale = isPortrait ? Math.min(width * 0.0028, 1.1) : Math.min(height * 0.002, 0.95);
-
-    const characterGlow = this.add.graphics();
-    characterGlow.fillStyle(0xffd700, 0.2);
-    characterGlow.fillCircle(centerX, charY, 100 * charScale);
-    characterGlow.setDepth(10);
-
-    const charShadow = this.add.graphics();
-    charShadow.fillStyle(0x000000, 0.35);
-    charShadow.fillEllipse(centerX, charY + 65 * charScale, 75 * charScale, 22 * charScale);
-    charShadow.setDepth(10);
-
-    this.character = this.add.sprite(centerX, charY, 'mushak_protag')
-      .setScale(charScale)
-      .setDepth(11);
-    this.character.play('mushak_run');
-
-    this.tweens.add({
-      targets: this.character,
-      y: charY - 10,
-      scaleX: charScale * 0.96,
-      scaleY: charScale * 1.04,
-      duration: 380,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Quad.easeInOut'
-    });
-
-    // Buttons
-    const btnW = Math.min(width * 0.82, 270);
-    const btnH = isPortrait ? 52 : 46;
-
     if (isPortrait) {
+      // ---------------------------------------------------------------
+      // PORTRAIT MOBILE (Vertical Stack)
+      // ---------------------------------------------------------------
+      const titleY = height * 0.19;
+      const titleContainer = this.add.container(centerX, titleY).setDepth(10);
+
+      const subTitle = this.add.text(0, -26, '✨ VINAYAKA CHATURTHI FESTIVAL RUNNER ✨', {
+        fontFamily: 'Outfit, sans-serif',
+        fontSize: Math.min(width * 0.034, 13) + 'px',
+        letterSpacing: 1.5,
+        color: '#FFE082',
+        fontStyle: 'bold'
+      }).setOrigin(0.5);
+
+      const titleFontSize = Math.min(width * 0.11, 46);
+      const titleText = this.add.text(0, 14, 'MUSHAK DASH', {
+        fontFamily: 'Fredoka, Outfit, sans-serif',
+        fontSize: `${titleFontSize}px`,
+        fontStyle: 'bold',
+        color: '#FFF8E1',
+        stroke: '#E65100',
+        strokeThickness: 6,
+        shadow: { offsetX: 0, offsetY: 4, color: '#000000', blur: 8, stroke: true, fill: true }
+      }).setOrigin(0.5);
+
+      titleContainer.add([subTitle, titleText]);
+
+      // Hero Character in Middle
+      const charY = height * 0.42;
+      const charScale = Math.min(width * 0.0028, 1.1);
+
+      const characterGlow = this.add.graphics();
+      characterGlow.fillStyle(0xffd700, 0.2);
+      characterGlow.fillCircle(centerX, charY, 100 * charScale);
+      characterGlow.setDepth(10);
+
+      const charShadow = this.add.graphics();
+      charShadow.fillStyle(0x000000, 0.35);
+      charShadow.fillEllipse(centerX, charY + 65 * charScale, 75 * charScale, 22 * charScale);
+      charShadow.setDepth(10);
+
+      this.character = this.add.sprite(centerX, charY, 'mushak_protag')
+        .setScale(charScale)
+        .setDepth(11);
+      this.character.play('mushak_run');
+
+      this.tweens.add({
+        targets: this.character,
+        y: charY - 10,
+        scaleX: charScale * 0.96,
+        scaleY: charScale * 1.04,
+        duration: 380,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Quad.easeInOut'
+      });
+
+      // Buttons
+      const btnW = Math.min(width * 0.82, 270);
+      const btnH = 52;
       const playY = height * 0.65;
       const lbY = playY + btnH + 16;
       this.createButton(centerX, playY, btnW, btnH, '⚡ PLAY RUN', 0xff7722, true, () => this.startGame());
@@ -315,15 +318,95 @@ export default class MenuScene extends Phaser.Scene {
         fontSize: '12px',
         color: '#FFE082'
       }).setOrigin(0.5).setDepth(11);
+
     } else {
-      // Landscape Mobile: Side by Side Buttons
-      const playX = centerX - btnW * 0.55;
-      const lbX = centerX + btnW * 0.55;
-      const btnY = height * 0.80;
-      this.createButton(playX, btnY, btnW * 0.9, btnH, '⚡ PLAY RUN', 0xff7722, true, () => this.startGame());
-      this.createButton(lbX, btnY, btnW * 0.9, btnH, '🏆 LEADERBOARD', 0x2d174d, false, () => {
+      // ---------------------------------------------------------------
+      // PHONE LANDSCAPE (Widescreen 2-Column Layout)
+      // ---------------------------------------------------------------
+      const leftColX = width * 0.35;
+      const rightColX = width * 0.74;
+
+      // Title Section (Left Column)
+      const titleY = height * 0.34;
+      const titleContainer = this.add.container(leftColX, titleY).setDepth(10);
+
+      const subTitle = this.add.text(0, -26, '✨ VINAYAKA CHATURTHI FESTIVAL RUNNER ✨', {
+        fontFamily: 'Outfit, sans-serif',
+        fontSize: '11px',
+        letterSpacing: 1.5,
+        color: '#FFE082',
+        fontStyle: 'bold'
+      }).setOrigin(0.5);
+
+      const titleFontSize = Math.min(height * 0.12, 42);
+      const titleText = this.add.text(0, 10, 'MUSHAK DASH', {
+        fontFamily: 'Fredoka, Outfit, sans-serif',
+        fontSize: `${titleFontSize}px`,
+        fontStyle: 'bold',
+        color: '#FFF8E1',
+        stroke: '#E65100',
+        strokeThickness: 6,
+        shadow: { offsetX: 0, offsetY: 4, color: '#000000', blur: 8, stroke: true, fill: true }
+      }).setOrigin(0.5);
+
+      titleContainer.add([subTitle, titleText]);
+
+      this.tweens.add({
+        targets: titleContainer,
+        y: titleY - 6,
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+
+      // Buttons (Left Column, side by side)
+      const btnW = Math.min(width * 0.22, 160);
+      const btnH = Math.min(height * 0.13, 46);
+      const btnY = height * 0.66;
+      const btnGap = 12;
+
+      this.createButton(leftColX - btnW / 2 - btnGap / 2, btnY, btnW, btnH, '⚡ PLAY RUN', 0xff7722, true, () => this.startGame());
+      this.createButton(leftColX + btnW / 2 + btnGap / 2, btnY, btnW, btnH, '🏆 RANKS', 0x2d174d, false, () => {
         sounds.playClick();
         this.scene.start('LeaderboardScene');
+      });
+
+      // Quick gesture tip under buttons
+      this.add.text(leftColX, height * 0.84, '👆 Touch ▲ / ▼ / ⚡ JUMP or Swipe on Screen', {
+        fontFamily: 'Outfit, sans-serif',
+        fontSize: '11px',
+        color: '#FFE082'
+      }).setOrigin(0.5).setDepth(11);
+
+      // Hero Character (Right Column)
+      const charY = height * 0.52;
+      const charScale = Math.min(height * 0.0024, 0.95);
+
+      const characterGlow = this.add.graphics();
+      characterGlow.fillStyle(0xffd700, 0.22);
+      characterGlow.fillCircle(rightColX, charY, 90 * charScale);
+      characterGlow.setDepth(10);
+
+      const charShadow = this.add.graphics();
+      charShadow.fillStyle(0x000000, 0.35);
+      charShadow.fillEllipse(rightColX, charY + 60 * charScale, 75 * charScale, 22 * charScale);
+      charShadow.setDepth(10);
+
+      this.character = this.add.sprite(rightColX, charY, 'mushak_protag')
+        .setScale(charScale)
+        .setDepth(11);
+      this.character.play('mushak_run');
+
+      this.tweens.add({
+        targets: this.character,
+        y: charY - 10,
+        scaleX: charScale * 0.96,
+        scaleY: charScale * 1.04,
+        duration: 380,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Quad.easeInOut'
       });
     }
   }

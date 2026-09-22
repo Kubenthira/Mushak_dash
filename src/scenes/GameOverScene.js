@@ -20,7 +20,9 @@ export default class GameOverScene extends Phaser.Scene {
 
     const width = this.scale.width;
     const height = this.scale.height;
-    const isMobile = width < 680 || width < height;
+    const isPhoneLandscape = width > height && height <= 520;
+    const isPortrait = height >= width;
+    const isMobile = isPhoneLandscape || isPortrait || width < 680;
 
     // 1. 3-Layer Parallax Background
     const texH = 724;
@@ -51,8 +53,8 @@ export default class GameOverScene extends Phaser.Scene {
     }
 
     // 3. Title
-    const titleY = isMobile ? (this.isNewHigh ? 48 : 58) : 80;
-    const titleSize = isMobile ? Math.min(width * 0.09, 36) : 48;
+    let titleY = isPhoneLandscape ? (this.isNewHigh ? 24 : 30) : (isMobile ? (this.isNewHigh ? 48 : 58) : 80);
+    let titleSize = isPhoneLandscape ? 28 : (isMobile ? Math.min(width * 0.09, 36) : 48);
 
     this.add.text(width / 2, titleY, 'RUN FINISHED', {
       fontFamily: 'Fredoka, Outfit, sans-serif',
@@ -65,10 +67,10 @@ export default class GameOverScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     if (this.isNewHigh) {
-      const bannerY = isMobile ? titleY + 34 : 135;
+      const bannerY = isPhoneLandscape ? titleY + 22 : (isMobile ? titleY + 34 : 135);
       const banner = this.add.text(width / 2, bannerY, '⭐ NEW RECORD! ⭐', {
         fontFamily: 'Fredoka, sans-serif',
-        fontSize: isMobile ? '16px' : '22px',
+        fontSize: isPhoneLandscape ? '13px' : (isMobile ? '16px' : '22px'),
         color: '#FFD700',
         fontStyle: 'bold'
       }).setOrigin(0.5);
@@ -84,35 +86,35 @@ export default class GameOverScene extends Phaser.Scene {
     }
 
     // 4. Results Card (Fully Responsive)
-    const cardWidth = Math.min(width * 0.90, 620);
-    const cardHeight = isMobile ? 220 : 250;
-    const cardY = isMobile ? (this.isNewHigh ? 115 : 105) : 175;
+    const cardWidth = isPhoneLandscape ? Math.min(width * 0.85, 520) : Math.min(width * 0.90, 620);
+    const cardHeight = isPhoneLandscape ? 150 : (isMobile ? 220 : 250);
+    const cardY = isPhoneLandscape ? (this.isNewHigh ? 58 : 52) : (isMobile ? (this.isNewHigh ? 115 : 105) : 175);
     const centerX = width / 2;
 
     const card = this.add.graphics();
     card.fillStyle(0x130e26, 0.92);
-    card.fillRoundedRect(centerX - cardWidth / 2, cardY, cardWidth, cardHeight, 20);
+    card.fillRoundedRect(centerX - cardWidth / 2, cardY, cardWidth, cardHeight, 16);
     card.lineStyle(2, 0xffd700, 0.5);
-    card.strokeRoundedRect(centerX - cardWidth / 2, cardY, cardWidth, cardHeight, 20);
+    card.strokeRoundedRect(centerX - cardWidth / 2, cardY, cardWidth, cardHeight, 16);
 
     const animatedScore = { val: 0 };
 
-    if (!isMobile) {
-      // Desktop / Wide Layout: Split Left (Score) and Right (Stats)
+    if (!isMobile || isPhoneLandscape) {
+      // Desktop / Phone Landscape: Split Left (Score) and Right (Stats)
       const leftColX = centerX - cardWidth * 0.25;
       const rightColX = centerX + cardWidth * 0.08;
-      const rightValX = centerX + cardWidth * 0.44;
+      const rightValX = centerX + cardWidth * 0.42;
 
-      this.add.text(leftColX, cardY + 40, 'TOTAL SCORE', {
+      this.add.text(leftColX, cardY + (isPhoneLandscape ? 24 : 40), 'TOTAL SCORE', {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '15px',
-        letterSpacing: 2,
+        fontSize: isPhoneLandscape ? '12px' : '15px',
+        letterSpacing: 1.5,
         color: '#FFE082'
       }).setOrigin(0.5);
 
-      const scoreValText = this.add.text(leftColX, cardY + 95, '0', {
+      const scoreValText = this.add.text(leftColX, cardY + (isPhoneLandscape ? 58 : 95), '0', {
         fontFamily: 'Fredoka, sans-serif',
-        fontSize: '52px',
+        fontSize: isPhoneLandscape ? '38px' : '52px',
         fontStyle: 'bold',
         color: '#FFFFFF'
       }).setOrigin(0.5);
@@ -129,31 +131,35 @@ export default class GameOverScene extends Phaser.Scene {
 
       const div = this.add.graphics();
       div.lineStyle(1.5, 0xffffff, 0.15);
-      div.lineBetween(centerX, cardY + 30, centerX, cardY + cardHeight - 50);
+      div.lineBetween(centerX - cardWidth * 0.02, cardY + 18, centerX - cardWidth * 0.02, cardY + cardHeight - 38);
 
-      this.add.text(rightColX, cardY + 50, 'BEST SCORE', {
+      const stat1Y = cardY + (isPhoneLandscape ? 26 : 50);
+      const stat2Y = cardY + (isPhoneLandscape ? 60 : 105);
+
+      this.add.text(rightColX, stat1Y, 'BEST SCORE', {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '15px',
+        fontSize: isPhoneLandscape ? '12px' : '15px',
         color: '#B0BEC5'
       });
-      this.add.text(rightValX, cardY + 50, `${this.highScore}`, {
+      this.add.text(rightValX, stat1Y, `${this.highScore}`, {
         fontFamily: 'Fredoka, sans-serif',
-        fontSize: '20px',
+        fontSize: isPhoneLandscape ? '16px' : '20px',
         fontStyle: 'bold',
         color: '#FFD700'
       }).setOrigin(1, 0);
 
-      this.add.text(rightColX, cardY + 105, 'MODAKS COLLECTED', {
+      this.add.text(rightColX, stat2Y, 'MODAKS', {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '15px',
+        fontSize: isPhoneLandscape ? '12px' : '15px',
         color: '#B0BEC5'
       });
-      this.add.text(rightValX, cardY + 105, `🥟 ${this.modaks}`, {
+      this.add.text(rightValX, stat2Y, `🥟 ${this.modaks}`, {
         fontFamily: 'Fredoka, sans-serif',
-        fontSize: '20px',
+        fontSize: isPhoneLandscape ? '16px' : '20px',
         fontStyle: 'bold',
         color: '#FFE082'
       }).setOrigin(1, 0);
+
 
     } else {
       // Mobile Layout: Clean Centered Stack
@@ -204,10 +210,11 @@ export default class GameOverScene extends Phaser.Scene {
     // 5. Leaderboard Status Banner & Player Identity
     const profile = getPlayerProfile();
     const playerId = profile.playerId || 'MushakRunner';
-    const playerCampus = profile.campus || 'Main Campus';
+    const playerCampus = (profile.campus || '').trim();
 
     const playerTagY = cardY + cardHeight - 38;
-    this.add.text(centerX, playerTagY, `👤 ${playerId}  •  🏫 ${playerCampus}`, {
+    const identityStr = playerCampus ? `👤 ${playerId}  •  🏫 ${playerCampus}` : `👤 ${playerId}`;
+    this.add.text(centerX, playerTagY, identityStr, {
       fontFamily: 'Fredoka, sans-serif',
       fontSize: isMobile ? '12px' : '14px',
       color: '#81C784',
@@ -255,8 +262,26 @@ export default class GameOverScene extends Phaser.Scene {
       });
     };
 
-    if (isMobile) {
-      // Mobile Button Layout
+    const isPhoneLandscape = width > height && height <= 520;
+
+    if (isPhoneLandscape) {
+      // Phone Landscape: Single row of 3 compact buttons right beneath the results card
+      const btnY = cardY + cardHeight + 22;
+      const btnH = 36;
+      const btnW = Math.min((width * 0.82) / 3, 138);
+      const gap = 10;
+
+      this.createBtn(centerX - btnW - gap, btnY, btnW, btnH, '⚡ AGAIN', 0xff7722, true, restartGame);
+      this.createBtn(centerX, btnY, btnW, btnH, '🏆 RANKS', 0x4a148c, false, () => {
+        sounds.playClick();
+        this.scene.start('LeaderboardScene');
+      });
+      this.createBtn(centerX + btnW + gap, btnY, btnW, btnH, 'MENU', 0x2d174d, false, () => {
+        sounds.playClick();
+        this.scene.start('MenuScene');
+      });
+    } else if (isMobile) {
+      // Mobile Portrait Button Layout
       const btn1Y = cardY + cardHeight + 35;
       const btn2Y = btn1Y + 54;
       const btnW = Math.min(width * 0.85, 280);

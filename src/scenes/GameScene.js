@@ -90,12 +90,20 @@ export default class GameScene extends Phaser.Scene {
 
   updateLanes() {
     const isPortrait = this.height > this.width;
+    const isPhoneLandscape = this.width > this.height && this.height <= 520;
     if (isPortrait) {
       // In mobile portrait, the street road sits lower down to give generous sky view
       this.lanesY = [
         this.height * 0.69, // Top track on road
         this.height * 0.78, // Middle track on road
         this.height * 0.87  // Bottom track on road
+      ];
+    } else if (isPhoneLandscape) {
+      // In phone landscape, optimize 3 tracks to road pavement
+      this.lanesY = [
+        this.height * 0.72,
+        this.height * 0.82,
+        this.height * 0.92
       ];
     } else {
       this.lanesY = [
@@ -129,7 +137,8 @@ export default class GameScene extends Phaser.Scene {
     this.drawLaneMarkers();
 
     const isPortrait = this.height > this.width;
-    const playerX = Math.max(70, this.width * (isPortrait ? 0.15 : 0.18));
+    const isPhoneLandscape = this.width > this.height && this.height <= 520;
+    const playerX = Math.max(75, this.width * (isPhoneLandscape ? 0.14 : (isPortrait ? 0.15 : 0.18)));
     if (this.playerContainer && !this.isDead) {
       this.playerContainer.x = playerX;
       this.playerContainer.y = this.lanesY[this.currentLane];
@@ -292,11 +301,12 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createHUD() {
-    const isMobile = this.width < 600;
-    const hudW = isMobile ? Math.min(this.width * 0.65, 230) : 380;
-    const hudH = isMobile ? 42 : 54;
-    const hudX = isMobile ? 14 : 30;
-    const hudY = isMobile ? 12 : 20;
+    const isPhoneLandscape = this.width > this.height && this.height <= 520;
+    const isMobile = this.width < 600 || isPhoneLandscape;
+    const hudW = isPhoneLandscape ? 210 : (isMobile ? Math.min(this.width * 0.65, 230) : 380);
+    const hudH = isPhoneLandscape ? 36 : (isMobile ? 42 : 54);
+    const hudX = isPhoneLandscape ? 12 : (isMobile ? 14 : 30);
+    const hudY = isPhoneLandscape ? 10 : (isMobile ? 12 : 20);
 
     const hudBar = this.add.graphics();
     hudBar.fillStyle(0x0f0c20, 0.82);
@@ -305,8 +315,8 @@ export default class GameScene extends Phaser.Scene {
     hudBar.strokeRoundedRect(hudX, hudY, hudW, hudH, hudH / 2);
     hudBar.setDepth(100);
 
-    const scoreFontSize = isMobile ? '15px' : '22px';
-    const scoreX = hudX + (isMobile ? 14 : 22);
+    const scoreFontSize = isPhoneLandscape ? '14px' : (isMobile ? '15px' : '22px');
+    const scoreX = hudX + (isPhoneLandscape ? 12 : (isMobile ? 14 : 22));
     const scoreY = hudY + hudH / 2;
 
     this.scoreText = this.add.text(scoreX, scoreY, 'SCORE: 0', {
@@ -316,11 +326,11 @@ export default class GameScene extends Phaser.Scene {
       color: '#FFFFFF'
     }).setOrigin(0, 0.5).setDepth(101);
 
-    const modakIconX = hudX + hudW - (isMobile ? 48 : 95);
-    const modakTextX = modakIconX + (isMobile ? 18 : 25);
+    const modakIconX = hudX + hudW - (isPhoneLandscape ? 44 : (isMobile ? 48 : 95));
+    const modakTextX = modakIconX + (isPhoneLandscape ? 16 : (isMobile ? 18 : 25));
 
     this.modakIcon = this.add.image(modakIconX, scoreY, 'modak_item')
-      .setScale(isMobile ? 0.08 : 0.12)
+      .setScale(isPhoneLandscape ? 0.07 : (isMobile ? 0.08 : 0.12))
       .setDepth(101);
 
     this.modakText = this.add.text(modakTextX, scoreY, '0', {
@@ -331,9 +341,9 @@ export default class GameScene extends Phaser.Scene {
     }).setOrigin(0, 0.5).setDepth(101);
 
     // Blessing Banner
-    const bannerW = isMobile ? Math.min(this.width * 0.65, 220) : 280;
-    const bannerH = isMobile ? 30 : 36;
-    const bannerY = isMobile ? hudY + hudH + 20 : 45;
+    const bannerW = isPhoneLandscape ? 200 : (isMobile ? Math.min(this.width * 0.65, 220) : 280);
+    const bannerH = isPhoneLandscape ? 28 : (isMobile ? 30 : 36);
+    const bannerY = isPhoneLandscape ? 28 : (isMobile ? hudY + hudH + 20 : 45);
     const bannerX = this.width / 2;
 
     this.blessingBanner = this.add.container(bannerX, bannerY);
@@ -347,7 +357,7 @@ export default class GameScene extends Phaser.Scene {
 
     const bannerText = this.add.text(0, 0, '✨ GANESHA BLESSING ✨', {
       fontFamily: 'Fredoka, sans-serif',
-      fontSize: isMobile ? '12px' : '16px',
+      fontSize: isPhoneLandscape ? '11px' : (isMobile ? '12px' : '16px'),
       fontStyle: 'bold',
       color: '#FFFFFF'
     }).setOrigin(0.5);

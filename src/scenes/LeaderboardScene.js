@@ -219,7 +219,7 @@ export default class LeaderboardScene extends Phaser.Scene {
       }
       if (entry.isCurrentPlayer) nameStr += ' ⭐';
 
-      let campusStr = entry.campus || 'Main Campus';
+      let campusStr = (entry.campus || '').trim();
       const maxCampusLen = this.isMobile ? 12 : 20;
       if (campusStr.length > maxCampusLen) {
         campusStr = campusStr.slice(0, maxCampusLen - 1) + '…';
@@ -238,18 +238,23 @@ export default class LeaderboardScene extends Phaser.Scene {
         }
       ).setOrigin(0, 0.5);
 
-      // Campus badge next to name
-      const campusOffset = nameText.width + (this.isMobile ? 6 : 12);
-      const campusText = this.add.text(
-        playerX + campusOffset,
-        y + (rowHeight - 5) / 2,
-        `🏫 ${campusStr}`,
-        {
-          fontFamily: 'Outfit, sans-serif',
-          fontSize: this.isMobile ? '10px' : '12px',
-          color: '#80DEEA'
-        }
-      ).setOrigin(0, 0.5);
+      const rowChildren = [rText, nameText];
+
+      // Campus badge next to name (only shown if player specified a campus)
+      if (campusStr) {
+        const campusOffset = nameText.width + (this.isMobile ? 6 : 12);
+        const campusText = this.add.text(
+          playerX + campusOffset,
+          y + (rowHeight - 5) / 2,
+          `🏫 ${campusStr}`,
+          {
+            fontFamily: 'Outfit, sans-serif',
+            fontSize: this.isMobile ? '10px' : '12px',
+            color: '#80DEEA'
+          }
+        ).setOrigin(0, 0.5);
+        rowChildren.push(campusText);
+      }
 
       // Score
       const scoreText = this.add.text(scoreX, y + (rowHeight - 5) / 2, `${entry.score}`, {
@@ -259,7 +264,8 @@ export default class LeaderboardScene extends Phaser.Scene {
         color: '#FFD700'
       }).setOrigin(1, 0.5);
 
-      rowContainer.add([rText, nameText, campusText, scoreText]);
+      rowChildren.push(scoreText);
+      rowContainer.add(rowChildren);
       this.scoreContainer.add(rowContainer);
     });
   }
