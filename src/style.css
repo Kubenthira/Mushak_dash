@@ -513,6 +513,8 @@ canvas {
   font-family: 'Outfit', sans-serif;
   color: #fff;
   outline: none;
+  user-select: text;
+  -webkit-user-select: text;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 

@@ -52,12 +52,13 @@
         if (!url || url.includes('chrome-extension') || url.includes('moz-extension')) return;
         console.error('[Global Error]', msg, url, line, err);
       };
-      window.addEventListener('unhandledrejection', function(e) {
-        var reason = e.reason && e.reason.message ? e.reason.message : String(e.reason || '');
-        if (reason.includes('drawImage') || reason.includes('Extension') || reason.includes('ResizeObserver')) {
-          return;
-        }
-        console.error('[Unhandled Promise Rejection]:', e.reason);
+      // Prevent game engine from intercepting A, S, D, W, Space or other keys while typing in HTML inputs
+      ['keydown', 'keyup', 'keypress'].forEach(function(evtName) {
+        window.addEventListener(evtName, function(e) {
+          if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+            e.stopPropagation();
+          }
+        }, true); // Capture phase runs before Phaser's window listener
       });
     </script>
   </head>

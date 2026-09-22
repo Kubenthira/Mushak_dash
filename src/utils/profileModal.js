@@ -57,6 +57,25 @@ export function setupProfileModal(onSaveCallback, isMandatory = false) {
     }
   }
 
+  // Stop propagation on inputs so Phaser never sees or prevents default on A, S, D, W, or Space
+  const stopKeyPropagation = (e) => {
+    e.stopPropagation();
+  };
+  ['keydown', 'keyup', 'keypress'].forEach((evt) => {
+    idInput.addEventListener(evt, stopKeyPropagation);
+    if (campusInput) {
+      campusInput.addEventListener(evt, stopKeyPropagation);
+    }
+  });
+
+  const onInputFocus = () => {
+    if (window.__MUSHAK_GAME_INSTANCE__?.input?.keyboard) {
+      window.__MUSHAK_GAME_INSTANCE__.input.keyboard.enabled = false;
+    }
+  };
+  idInput.addEventListener('focus', onInputFocus);
+  if (campusInput) campusInput.addEventListener('focus', onInputFocus);
+
   // Suggest ID Button
   if (randomBtn) {
     randomBtn.onclick = (e) => {
@@ -159,6 +178,11 @@ export function showProfileModal(onSaveCallback, isMandatory = false) {
   setupProfileModal(onSaveCallback, isMandatory);
   modal.classList.add('active');
 
+  // Disable Phaser keyboard so game inputs (A, S, D, W, Space) don't intercept typing
+  if (window.__MUSHAK_GAME_INSTANCE__?.input?.keyboard) {
+    window.__MUSHAK_GAME_INSTANCE__.input.keyboard.enabled = false;
+  }
+
   setTimeout(() => {
     if (idInput && !idInput.value) {
       idInput.focus();
@@ -170,5 +194,9 @@ export function hideProfileModal() {
   const modal = document.getElementById('profile-modal');
   if (modal) {
     modal.classList.remove('active');
+  }
+  // Re-enable Phaser keyboard input when modal closes
+  if (window.__MUSHAK_GAME_INSTANCE__?.input?.keyboard) {
+    window.__MUSHAK_GAME_INSTANCE__.input.keyboard.enabled = true;
   }
 }

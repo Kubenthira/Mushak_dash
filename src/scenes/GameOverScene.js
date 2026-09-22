@@ -293,8 +293,12 @@ export default class GameOverScene extends Phaser.Scene {
       });
     }
 
-    this.input.keyboard.on('keydown-SPACE', restartGame);
-    this.input.keyboard.on('keydown-ENTER', restartGame);
+    const handleRestart = () => {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
+      restartGame();
+    };
+    this.input.keyboard.on('keydown-SPACE', handleRestart);
+    this.input.keyboard.on('keydown-ENTER', handleRestart);
   }
 
   createBtn(x, y, w, h, label, colorHex, isPrimary, onClick) {

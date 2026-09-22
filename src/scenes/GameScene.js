@@ -201,20 +201,22 @@ export default class GameScene extends Phaser.Scene {
 
   setupInputHandlers() {
     this.cursors = this.input.keyboard.createCursorKeys();
-    this.keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
-    this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-    this.keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-    this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-    this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W, false);
+    this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S, false);
+    this.keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A, false);
+    this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D, false);
+    this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE, false);
 
-    this.input.keyboard.on('keydown-UP', () => this.switchLane(-1));
-    this.input.keyboard.on('keydown-W', () => this.switchLane(-1));
-    this.input.keyboard.on('keydown-DOWN', () => this.switchLane(1));
-    this.input.keyboard.on('keydown-S', () => this.switchLane(1));
+    const isInputActive = () => document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
 
-    this.input.keyboard.on('keydown-SPACE', () => this.jump());
-    this.input.keyboard.on('keydown-RIGHT', () => this.jump());
-    this.input.keyboard.on('keydown-D', () => this.jump());
+    this.input.keyboard.on('keydown-UP', () => { if (!isInputActive()) this.switchLane(-1); });
+    this.input.keyboard.on('keydown-W', () => { if (!isInputActive()) this.switchLane(-1); });
+    this.input.keyboard.on('keydown-DOWN', () => { if (!isInputActive()) this.switchLane(1); });
+    this.input.keyboard.on('keydown-S', () => { if (!isInputActive()) this.switchLane(1); });
+
+    this.input.keyboard.on('keydown-SPACE', () => { if (!isInputActive()) this.jump(); });
+    this.input.keyboard.on('keydown-RIGHT', () => { if (!isInputActive()) this.jump(); });
+    this.input.keyboard.on('keydown-D', () => { if (!isInputActive()) this.jump(); });
 
     // Show Mobile Touch Controls if on mobile/touch device
     const touchControls = document.getElementById('touch-controls');

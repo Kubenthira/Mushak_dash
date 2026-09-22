@@ -363,8 +363,14 @@ export default class MenuScene extends Phaser.Scene {
     btn.on('pointerdown', onClick);
 
     if (isPrimary) {
-      this.input.keyboard.on('keydown-SPACE', onClick);
-      this.input.keyboard.on('keydown-ENTER', onClick);
+      const handleKeyAction = () => {
+        const modal = document.getElementById('profile-modal');
+        if (modal && modal.classList.contains('active')) return;
+        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
+        onClick();
+      };
+      this.input.keyboard.on('keydown-SPACE', handleKeyAction);
+      this.input.keyboard.on('keydown-ENTER', handleKeyAction);
     }
 
     return btn;
